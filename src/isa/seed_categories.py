@@ -22,7 +22,12 @@ def save_categories(sectors_df, membership_df, root="data/categories"):
     membership_df.to_parquet(os.path.join(root, "membership.parquet"), index=False)
 
 def _sp500_from_wikipedia():
-    tables = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+    import io, urllib.request
+    url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+    req = urllib.request.Request(url, headers={"User-Agent": "isa-research/0.1 (personal open-source project)"})
+    with urllib.request.urlopen(req) as resp:
+        html = resp.read().decode("utf-8")
+    tables = pd.read_html(io.StringIO(html))
     t = tables[0]
     return [{"ticker": r["Symbol"], "sector": r["GICS Sector"],
              "industry": r["GICS Sub-Industry"], "sic": None}
