@@ -6,7 +6,11 @@ _COLMAP = {"Open": "open", "High": "high", "Low": "low",
            "Close": "close", "Adj Close": "adj_close", "Volume": "volume"}
 
 def normalize_ohlcv(raw):
-    df = raw.rename(columns=_COLMAP).copy()
+    df = raw.copy()
+    # yfinance can return MultiIndex columns (field, ticker); flatten to field level
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    df = df.rename(columns=_COLMAP)
     df["date"] = pd.to_datetime(df.index)
     return df.reset_index(drop=True)[prices.PRICE_COLUMNS]
 
