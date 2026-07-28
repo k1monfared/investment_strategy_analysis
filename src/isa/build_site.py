@@ -5,10 +5,11 @@ Pages produced under out_dir:
   strategies.html           index of all strategies, linking to detail pages
   strategy/<id>.html        full description of one strategy
   explorer.html             interactive price and portfolio and strategy explorer
+  glossary.html             plain-language explanations of metrics and concepts
   data/manifest.json        list of available tickers with sector
   data/strategies.json      strategy metadata for the explorer
   data/prices/<TICKER>.json compact price series for the explorer
-  assets/style.css, assets/explorer.js
+  assets/style.css, assets/explorer.js, assets/plotly.min.js
 
 All charts obey the project rules: bar charts start at zero, change is shown with
 line and dot charts, and there are no emojis in any output.
@@ -21,6 +22,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.io import to_html
 
+from isa import glossary as glossary_mod
 from isa import results as results_mod
 from isa import strategy as strategy_mod
 from isa import web_assets
@@ -34,6 +36,20 @@ METRIC_LABELS = {
     "win_rate": "Win rate",
 }
 PCT_METRICS = {"total_return", "cagr", "max_drawdown", "win_rate"}
+
+
+def _info(key, depth=0):
+    """A small linked (i) marker that deep-links to a glossary term."""
+    up = "../" * depth
+    term = glossary_mod.BY_KEY.get(key)
+    title = term["short"] if term else key
+    return (f'<a class="info" href="{up}glossary.html#{key}" '
+            f'title="{title}">i</a>')
+
+
+def _metric_header(metric, depth=0):
+    label = METRIC_LABELS.get(metric, metric)
+    return f"<th>{label}{_info(metric, depth)}</th>"
 
 
 # --------------------------------------------------------------------------- data
@@ -102,6 +118,7 @@ def _page(title, active, body, depth=0):
 {nav("index.html", "Overview", "overview")}
 {nav("strategies.html", "Strategies", "strategies")}
 {nav("explorer.html", "Explorer", "explorer")}
+{nav("glossary.html", "Glossary", "glossary")}
 </nav>
 </div></header>
 <main>
@@ -136,7 +153,7 @@ def _overview_table_html(df):
     piv = df.pivot_table(index=["strategy_id", "universe"], columns="metric",
                          values="value", aggfunc="last")
     metrics = [m for m in METRIC_ORDER if m in piv.columns]
-    head = "".join(f"<th>{METRIC_LABELS[m]}</th>" for m in metrics)
+    head = "".join(_metric_header(m) for m in metrics)
     rows = []
     for (sid, uni), r in piv.iterrows():
         cells = []
@@ -150,7 +167,8 @@ def _overview_table_html(df):
                 cls = " class=\"metric-neg\""
             cells.append(f"<td{cls}>{txt}</td>")
         link = f'<a href="strategy/{sid}.html">{sid}</a>'
-        rows.append(f"<tr><td>{link}</td><td class='muted'>{uni}</td>{''.join(cells)}</tr>")
+        rows.append(f"<tr><td>{link}</td><td class='muted'>{uni}"
+                    f"{_info('universe')}</td>{''.join(cells)}</tr>")
     return (f"<table class='data'><thead><tr><th>Strategy</th><th>Universe</th>{head}</tr>"
             f"</thead><tbody>{''.join(rows)}</tbody></table>")
 
@@ -193,14 +211,17 @@ to build a custom portfolio and compare strategies on it interactively.</p>
 <span class="pill">{len(df)} result rows</span>
 </div>
 <div class="card">
-<h2>Risk-adjusted performance</h2>
+<h2>Risk-adjusted performance {_info("sharpe")}</h2>
 {_sharpe_dot_chart(df) if not df.empty else "<p class='empty'>No results yet.</p>"}
-<p class="hint">Higher Sharpe is better. Bars are 95% bootstrap confidence intervals on
-the estimate.</p>
+<p class="hint">Higher <a href="glossary.html#sharpe">Sharpe</a> is better. Bars are 95%
+<a href="glossary.html#confidence_interval">confidence intervals</a> on the estimate.
+New to these terms? See the <a href="glossary.html">Glossary</a>.</p>
 </div>
 <div class="card">
 <h2>Strategy comparison</h2>
 {_overview_table_html(df)}
+<p class="hint">Each metric header has an <span class="info">i</span> link to its glossary
+entry.</p>
 </div>
 """
 
@@ -233,11 +254,11 @@ def _strategy_detail_body(s, df):
     if not sub.empty:
         piv = sub.pivot_table(index="universe", columns="metric", values="value", aggfunc="last")
         metrics = [m for m in METRIC_ORDER if m in piv.columns]
-        head = "".join(f"<th>{METRIC_LABELS[m]}</th>" for m in metrics)
+        head = "".join(_metric_header(m, depth=1) for m in metrics)
         rows = []
         for uni, r in piv.iterrows():
             cells = "".join(f"<td>{_fmt_metric(m, r.get(m))}</td>" for m in metrics)
-            rows.append(f"<tr><td>{uni}</td>{cells}</tr>")
+            rows.append(f"<tr><td>{uni}{_info('universe', depth=1)}</td>{cells}</tr>")
         results_html = (f"<table class='data'><thead><tr><th>Universe</th>{head}</tr>"
                         f"</thead><tbody>{''.join(rows)}</tbody></table>")
     else:
@@ -278,14 +299,28 @@ def _explorer_body():
     return """
 <h1>Explorer</h1>
 <p class="lead">Build a portfolio by selecting tickers and assigning each a relative
-weight, then chart its price over the full history. Layer on one or more strategies to
-see how each would have performed on that exact portfolio, always compared against a
-buy and hold baseline.</p>
+weight, then chart its price over any date range you choose. Layer on one or more
+strategies to see how each would have performed on that exact portfolio and window,
+always compared against a buy and hold
+<a href="glossary.html#benchmark">baseline</a>. Unsure what a number means? Every metric
+links to the <a href="glossary.html">Glossary</a>.</p>
 
 <div class="card">
 <div class="controls">
   <div class="control">
-    <label for="smoothing">Frequency</label>
+    <label for="startDate">Start date <a class="info" href="glossary.html#equity_curve" title="Simulation start">i</a></label>
+    <input type="date" id="startDate">
+  </div>
+  <div class="control">
+    <label for="endDate">End date</label>
+    <input type="date" id="endDate">
+  </div>
+  <div class="control">
+    <label>&nbsp;</label>
+    <button class="btn secondary small" id="fullRangeBtn">Full range</button>
+  </div>
+  <div class="control">
+    <label for="smoothing">Frequency <a class="info" href="glossary.html#smoothing" title="Frequency and smoothing">i</a></label>
     <select id="smoothing">
       <option value="D">Daily</option>
       <option value="W">Weekly (last)</option>
@@ -311,6 +346,9 @@ buy and hold baseline.</p>
   </div>
 </div>
 <p class="hint" id="status">Loading available tickers...</p>
+<p class="hint">Change the start and end dates to re-run the simulation over just that
+window. All curves reindex to 100 at the window start and every metric recomputes for
+the window.</p>
 </div>
 
 <div class="explorer-grid">
@@ -319,6 +357,9 @@ buy and hold baseline.</p>
       <div class="searchbar"><input type="text" id="search" placeholder="Search tickers..."></div>
       <div class="picker" id="picker"></div>
     </div>
+    <p class="hint">Tick "All tickers" to select every ticker, or a sector heading to
+    toggle that whole sector. When a search filter is active, these toggles affect only
+    the visible rows.</p>
     <div class="card">
       <h3>Strategies</h3>
       <p class="hint">Select strategies to overlay on the portfolio.</p>
@@ -334,6 +375,30 @@ buy and hold baseline.</p>
   </div>
 </div>
 <script src="assets/explorer.js"></script>
+"""
+
+
+# ----------------------------------------------------------------- glossary
+
+def _glossary_body():
+    toc = "".join(
+        f'<a href="#{t["key"]}">{t["title"]}</a>' for t in glossary_mod.TERMS)
+    terms = []
+    for t in glossary_mod.TERMS:
+        terms.append(
+            f'<div class="term" id="{t["key"]}">'
+            f'<h2>{t["title"]}</h2>'
+            f'<p class="muted small">{t["short"]}</p>'
+            f'{t["html"]}'
+            f'<p class="small"><a href="#top">Back to top</a></p>'
+            f'</div>')
+    return f"""
+<h1 id="top">Glossary</h1>
+<p class="lead">Plain-language explanations of the metrics and concepts used across the
+dashboard. Throughout the site, an <span class="info">i</span> marker next to a term
+links back here.</p>
+<div class="toc-inline">{toc}</div>
+<div class="card glossary">{''.join(terms)}</div>
 """
 
 
@@ -416,6 +481,10 @@ def build_site(results_root="results", out_dir="site",
     # explorer
     with open(os.path.join(out_dir, "explorer.html"), "w", encoding="utf-8") as f:
         f.write(_page("Explorer", "explorer", _explorer_body()))
+
+    # glossary
+    with open(os.path.join(out_dir, "glossary.html"), "w", encoding="utf-8") as f:
+        f.write(_page("Glossary", "glossary", _glossary_body()))
 
     if export_prices:
         _export_data(out_dir, price_root, cat_root, strategies)

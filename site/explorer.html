@@ -14,20 +14,35 @@
 <a href="index.html">Overview</a>
 <a href="strategies.html">Strategies</a>
 <a href="explorer.html" class="active">Explorer</a>
+<a href="glossary.html">Glossary</a>
 </nav>
 </div></header>
 <main>
 
 <h1>Explorer</h1>
 <p class="lead">Build a portfolio by selecting tickers and assigning each a relative
-weight, then chart its price over the full history. Layer on one or more strategies to
-see how each would have performed on that exact portfolio, always compared against a
-buy and hold baseline.</p>
+weight, then chart its price over any date range you choose. Layer on one or more
+strategies to see how each would have performed on that exact portfolio and window,
+always compared against a buy and hold
+<a href="glossary.html#benchmark">baseline</a>. Unsure what a number means? Every metric
+links to the <a href="glossary.html">Glossary</a>.</p>
 
 <div class="card">
 <div class="controls">
   <div class="control">
-    <label for="smoothing">Frequency</label>
+    <label for="startDate">Start date <a class="info" href="glossary.html#equity_curve" title="Simulation start">i</a></label>
+    <input type="date" id="startDate">
+  </div>
+  <div class="control">
+    <label for="endDate">End date</label>
+    <input type="date" id="endDate">
+  </div>
+  <div class="control">
+    <label>&nbsp;</label>
+    <button class="btn secondary small" id="fullRangeBtn">Full range</button>
+  </div>
+  <div class="control">
+    <label for="smoothing">Frequency <a class="info" href="glossary.html#smoothing" title="Frequency and smoothing">i</a></label>
     <select id="smoothing">
       <option value="D">Daily</option>
       <option value="W">Weekly (last)</option>
@@ -53,6 +68,9 @@ buy and hold baseline.</p>
   </div>
 </div>
 <p class="hint" id="status">Loading available tickers...</p>
+<p class="hint">Change the start and end dates to re-run the simulation over just that
+window. All curves reindex to 100 at the window start and every metric recomputes for
+the window.</p>
 </div>
 
 <div class="explorer-grid">
@@ -61,6 +79,9 @@ buy and hold baseline.</p>
       <div class="searchbar"><input type="text" id="search" placeholder="Search tickers..."></div>
       <div class="picker" id="picker"></div>
     </div>
+    <p class="hint">Tick "All tickers" to select every ticker, or a sector heading to
+    toggle that whole sector. When a search filter is active, these toggles affect only
+    the visible rows.</p>
     <div class="card">
       <h3>Strategies</h3>
       <p class="hint">Select strategies to overlay on the portfolio.</p>

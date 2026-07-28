@@ -5,6 +5,7 @@
   var priceCache = {};
   var manifest = null;
   var strategies = [];
+  var fullPortfolio = null;  // full-history portfolio before date windowing
 
   function fmtPct(x) {
     if (x === null || x === undefined || isNaN(x)) return "";
@@ -34,8 +35,6 @@
   // Each ticker is normalized to 100 at the first common date, then combined by
   // its share of total weight. Returns {dates:[...], values:[...]}.
   function buildPortfolio(selected) {
-    // selected: [{ticker, weight, data:{d:[],c:[]}}]
-    // find common date intersection
     var sets = selected.map(function (s) {
       var m = {};
       var d = s.data.d, c = s.data.c;
@@ -57,7 +56,6 @@
     var totalW = selected.reduce(function (a, s) { return a + s.weight; }, 0);
     if (totalW === 0) totalW = 1;
 
-    // normalization factor per ticker: 100 / firstCommonPrice
     var norm = sets.map(function (m) { return 100.0 / m[common[0]]; });
     var values = [];
     for (var k = 0; k < common.length; k++) {
@@ -72,9 +70,28 @@
     return { dates: common, values: values };
   }
 
+  // ---- date windowing ----
+  // dates are YYYY-MM-DD strings, so lexical comparison is chronological.
+  function sliceByDate(series, start, end) {
+    if (!start && !end) return series;
+    var d = [], v = [];
+    for (var i = 0; i < series.dates.length; i++) {
+      var dt = series.dates[i];
+      if (start && dt < start) continue;
+      if (end && dt > end) continue;
+      d.push(dt); v.push(series.values[i]);
+    }
+    return { dates: d, values: v };
+  }
+  function reindex(series) {
+    if (series.values.length === 0) return series;
+    var f = series.values[0];
+    if (!f) return series;
+    return { dates: series.dates, values: series.values.map(function (x) { return x / f * 100; }) };
+  }
+
   // ---- smoothing ----
   function resampleLast(series, mode) {
-    // series: {dates:[YYYY-MM-DD], values:[]}; mode: 'D','W','M'
     if (mode === "D") return series;
     var out = { dates: [], values: [] };
     var lastKey = null, lastIdx = -1;
@@ -82,9 +99,7 @@
       var d = series.dates[i];
       var key;
       if (mode === "M") key = d.slice(0, 7);
-      else { // weekly: ISO-ish year+week bucket
-        key = weekKey(d);
-      }
+      else key = weekKey(d);
       if (key !== lastKey && lastKey !== null) {
         out.dates.push(series.dates[lastIdx]);
         out.values.push(series.values[lastIdx]);
@@ -96,7 +111,7 @@
   }
   function weekKey(d) {
     var dt = new Date(d + "T00:00:00Z");
-    var day = (dt.getUTCDay() + 6) % 7; // Monday=0
+    var day = (dt.getUTCDay() + 6) % 7;
     dt.setUTCDate(dt.getUTCDate() - day);
     return dt.toISOString().slice(0, 10);
   }
@@ -113,8 +128,6 @@
   }
 
   // ---- client-side strategy engine ----
-  // Mirrors the Python engine closely enough for interactive exploration:
-  // position is applied on the next bar, simple compounding, no fees by default.
   function pctChange(values) {
     var r = [0];
     for (var i = 1; i < values.length; i++) r.push(values[i] / values[i - 1] - 1);
@@ -149,9 +162,8 @@
     var pos = positionsFor(spec, vals);
     var eq = [100.0];
     for (var i = 1; i < vals.length; i++) {
-      var held = pos[i - 1]; // enter next bar
+      var held = pos[i - 1];
       var r = held * rets[i];
-      // fee when position changes
       if (fee && i >= 2 && pos[i - 1] !== pos[i - 2]) r -= fee;
       eq.push(eq[i - 1] * (1 + r));
     }
@@ -171,14 +183,15 @@
     var sharpe = std ? (mean / std) * Math.sqrt(252) : 0;
     var peak = v[0], mdd = 0;
     for (var i = 0; i < v.length; i++) { if (v[i] > peak) peak = v[i]; var dd = v[i] / peak - 1; if (dd < mdd) mdd = dd; }
-    return { total: total, cagr: cagr, sharpe: sharpe, mdd: mdd };
+    var winRate = rets.length ? rets.filter(function (x) { return x > 0; }).length / rets.length : 0;
+    return { total: total, cagr: cagr, sharpe: sharpe, mdd: mdd, win: winRate };
   }
 
-  // ---- DOM wiring ----
+  // ---- DOM helpers ----
+  function el(id) { return document.getElementById(id); }
   function selectedTickers() {
-    var rows = document.querySelectorAll("#picker .row");
     var out = [];
-    rows.forEach(function (row) {
+    document.querySelectorAll("#picker .row").forEach(function (row) {
       var cb = row.querySelector("input[type=checkbox]");
       if (cb.checked) {
         var w = parseFloat(row.querySelector("input[type=number]").value);
@@ -189,25 +202,19 @@
     return out;
   }
   function selectedStrategies() {
-    var rows = document.querySelectorAll("#stratlist .row");
     var out = [];
-    rows.forEach(function (row) {
+    document.querySelectorAll("#stratlist .row").forEach(function (row) {
       var cb = row.querySelector("input[type=checkbox]");
       if (cb.checked) out.push(cb.value);
     });
     return out;
   }
   function currentSmoothing() {
-    var mode = document.getElementById("smoothing").value;
-    var win = parseInt(document.getElementById("rollwin").value, 10);
-    return { mode: mode, win: win };
+    return { mode: el("smoothing").value, win: parseInt(el("rollwin").value, 10) };
   }
   function applySmoothing(series) {
     var s = currentSmoothing();
-    var out = series;
-    if (s.mode === "R") out = rollingMean(series, s.win);
-    else out = resampleLast(series, s.mode);
-    return out;
+    return s.mode === "R" ? rollingMean(series, s.win) : resampleLast(series, s.mode);
   }
 
   function renderPortfolioChart(portfolioRaw) {
@@ -218,7 +225,7 @@
     };
     var layout = {
       margin: { l: 55, r: 20, t: 30, b: 40 },
-      title: "Portfolio value (indexed to 100 at start)",
+      title: "Portfolio value (indexed to 100 at window start)",
       xaxis: { title: "" }, yaxis: { title: "Index" },
       hovermode: "x unified", showlegend: true
     };
@@ -226,16 +233,14 @@
   }
 
   function renderStrategyChart(portfolioRaw, stratIds) {
-    var fee = parseFloat(document.getElementById("fee").value);
+    var fee = parseFloat(el("fee").value);
     if (isNaN(fee)) fee = 0;
     var traces = [];
     var baseline = equityFor({ type: "buy_and_hold" }, portfolioRaw, 0);
     traces.push({ x: baseline.dates, y: baseline.values, type: "scatter", mode: "lines",
       name: "Buy and hold (baseline)", line: { color: "#a0aec0", width: 2, dash: "dot" } });
 
-    var rows = [];
-    rows.push(rowMetrics("Buy and hold (baseline)", metrics(baseline)));
-
+    var rows = [rowMetrics("Buy and hold (baseline)", metrics(baseline))];
     var palette = ["#2b6cb0", "#2f855a", "#b7791f", "#6b46c1", "#c53030", "#0987a0", "#b83280"];
     stratIds.forEach(function (id, idx) {
       var strat = strategies.filter(function (s) { return s.id === id; })[0];
@@ -254,10 +259,16 @@
     };
     Plotly.newPlot("stratChart", traces, layout, { responsive: true, displayModeBar: false });
 
-    document.getElementById("stratMetrics").innerHTML =
-      "<table class='data'><thead><tr><th>Strategy</th><th>Total return</th>" +
-      "<th>CAGR</th><th>Sharpe</th><th>Max drawdown</th></tr></thead><tbody>" +
-      rows.join("") + "</tbody></table>";
+    function hdr(label, key) {
+      return "<th>" + label +
+        "<a class='info' href='glossary.html#" + key + "' title='Open glossary'>i</a></th>";
+    }
+    el("stratMetrics").innerHTML =
+      "<table class='data'><thead><tr><th>Strategy</th>" +
+      hdr("Total return", "total_return") + hdr("CAGR", "cagr") +
+      hdr("Sharpe", "sharpe") + hdr("Max drawdown", "max_drawdown") +
+      hdr("Win rate", "win_rate") +
+      "</tr></thead><tbody>" + rows.join("") + "</tbody></table>";
   }
   function rowMetrics(name, m) {
     function cls(x) { return x >= 0 ? "metric-pos" : "metric-neg"; }
@@ -265,17 +276,53 @@
       "<td class='" + cls(m.total) + "'>" + fmtPct(m.total) + "</td>" +
       "<td class='" + cls(m.cagr) + "'>" + fmtPct(m.cagr) + "</td>" +
       "<td>" + fmtNum(m.sharpe) + "</td>" +
-      "<td class='metric-neg'>" + fmtPct(m.mdd) + "</td></tr>";
+      "<td class='metric-neg'>" + fmtPct(m.mdd) + "</td>" +
+      "<td>" + fmtPct(m.win) + "</td></tr>";
   }
 
-  function update() {
+  function setDateBounds(portfolio) {
+    var d = portfolio.dates;
+    if (d.length === 0) return;
+    var lo = d[0], hi = d[d.length - 1];
+    var s = el("startDate"), e = el("endDate");
+    s.min = lo; s.max = hi; e.min = lo; e.max = hi;
+    s.value = lo; e.value = hi;
+  }
+
+  // Render for the currently selected date window using the cached full portfolio.
+  function renderWindow() {
+    if (!fullPortfolio || fullPortfolio.dates.length === 0) return;
+    var start = el("startDate").value, end = el("endDate").value;
+    if (start && end && start > end) { var t = start; start = end; end = t; }
+    var win = sliceByDate(fullPortfolio, start, end);
+    var status = el("status");
+    if (win.dates.length < 2) {
+      status.textContent = "The selected date window has too few trading days. Widen it.";
+      el("priceChart").innerHTML = ""; el("stratChart").innerHTML = ""; el("stratMetrics").innerHTML = "";
+      return;
+    }
+    var portfolio = reindex(win);
+    status.textContent = win.dates.length + " trading days in window (" +
+      win.dates[0] + " to " + win.dates[win.dates.length - 1] + ").";
+    renderPortfolioChart(portfolio);
+    var strats = selectedStrategies();
+    if (strats.length > 0) renderStrategyChart(portfolio, strats);
+    else {
+      el("stratChart").innerHTML =
+        "<p class='empty'>Select one or more strategies to compare them on this portfolio.</p>";
+      el("stratMetrics").innerHTML = "";
+    }
+  }
+
+  // Reload prices for the current ticker selection, rebuild the full portfolio,
+  // reset the date window to the full range, then render.
+  function rebuild() {
     var sel = selectedTickers();
-    var status = document.getElementById("status");
+    var status = el("status");
     if (sel.length === 0) {
+      fullPortfolio = null;
       status.textContent = "Select at least one ticker to build a portfolio.";
-      document.getElementById("priceChart").innerHTML = "";
-      document.getElementById("stratChart").innerHTML = "";
-      document.getElementById("stratMetrics").innerHTML = "";
+      el("priceChart").innerHTML = ""; el("stratChart").innerHTML = ""; el("stratMetrics").innerHTML = "";
       return;
     }
     status.textContent = "Loading " + sel.length + " price series...";
@@ -286,23 +333,55 @@
     })).then(function (loaded) {
       var portfolio = buildPortfolio(loaded);
       if (portfolio.dates.length === 0) {
+        fullPortfolio = null;
         status.textContent = "Selected tickers have no overlapping dates.";
         return;
       }
-      status.textContent = sel.length + " tickers, " + portfolio.dates.length +
-        " common trading days (" + portfolio.dates[0] + " to " +
-        portfolio.dates[portfolio.dates.length - 1] + ").";
-      renderPortfolioChart(portfolio);
-      var strats = selectedStrategies();
-      if (strats.length > 0) renderStrategyChart(portfolio, strats);
-      else {
-        document.getElementById("stratChart").innerHTML =
-          "<p class='empty'>Select one or more strategies to compare them on this portfolio.</p>";
-        document.getElementById("stratMetrics").innerHTML = "";
-      }
+      fullPortfolio = portfolio;
+      setDateBounds(portfolio);
+      renderWindow();
     }).catch(function (e) {
       status.textContent = "Error: " + e.message;
     });
+  }
+
+  // Set a ticker row's checkbox state and keep its weight box enabled/disabled in sync.
+  function setRowChecked(row, checked) {
+    var cb = row.querySelector("input[type=checkbox]");
+    var wt = row.querySelector("input[type=number]");
+    cb.checked = checked;
+    wt.disabled = !checked;
+  }
+
+  // Reflect how many of a group's visible rows are checked on the parent checkbox,
+  // using the indeterminate state when the selection is partial.
+  function syncGroup(group) {
+    var rows = group.querySelectorAll(".row");
+    var boxes = group.querySelectorAll(".row input[type=checkbox]");
+    var total = boxes.length, checked = 0;
+    boxes.forEach(function (b) { if (b.checked) checked++; });
+    var head = group.querySelector(".sector input[type=checkbox]");
+    if (head) {
+      head.checked = total > 0 && checked === total;
+      head.indeterminate = checked > 0 && checked < total;
+    }
+    var cnt = group.querySelector(".sec-count");
+    if (cnt) cnt.textContent = checked + "/" + total;
+  }
+
+  function syncAll() {
+    var groups = document.querySelectorAll("#picker .sectorgroup");
+    groups.forEach(syncGroup);
+    var boxes = document.querySelectorAll("#picker .row input[type=checkbox]");
+    var total = boxes.length, checked = 0;
+    boxes.forEach(function (b) { if (b.checked) checked++; });
+    var master = el("selectAll");
+    if (master) {
+      master.checked = total > 0 && checked === total;
+      master.indeterminate = checked > 0 && checked < total;
+    }
+    var mc = el("selectAllCount");
+    if (mc) mc.textContent = checked + "/" + total;
   }
 
   function buildPicker() {
@@ -313,9 +392,16 @@
     });
     var sectors = Object.keys(bySector).sort();
     var html = "";
+    html += "<label class='selectall'>" +
+      "<input type='checkbox' id='selectAll'>" +
+      "<span class='sec-name'>All tickers</span>" +
+      "<span class='sec-count' id='selectAllCount'></span></label>";
     sectors.forEach(function (sec) {
       html += "<div class='sectorgroup' data-sector='" + sec.toLowerCase() + "'>";
-      html += "<div class='sector'>" + sec + "</div>";
+      html += "<label class='sector'>" +
+        "<input type='checkbox' class='sec-toggle'>" +
+        "<span class='sec-name'>" + sec + "</span>" +
+        "<span class='sec-count'></span></label>";
       bySector[sec].sort().forEach(function (tk) {
         html += "<div class='row' data-ticker='" + tk.toLowerCase() + "'>" +
           "<input type='checkbox' value='" + tk + "'>" +
@@ -325,13 +411,41 @@
       });
       html += "</div>";
     });
-    document.getElementById("picker").innerHTML = html;
+    el("picker").innerHTML = html;
 
+    // individual ticker rows
     document.querySelectorAll("#picker .row").forEach(function (row) {
       var cb = row.querySelector("input[type=checkbox]");
-      var wt = row.querySelector("input[type=number]");
-      cb.addEventListener("change", function () { wt.disabled = !cb.checked; });
+      cb.addEventListener("change", function () {
+        row.querySelector("input[type=number]").disabled = !cb.checked;
+        syncAll();
+      });
     });
+
+    // per-sector toggle: only affects rows currently visible under the search filter
+    document.querySelectorAll("#picker .sectorgroup").forEach(function (group) {
+      var head = group.querySelector(".sec-toggle");
+      head.addEventListener("change", function () {
+        var want = head.checked;
+        group.querySelectorAll(".row").forEach(function (row) {
+          if (row.style.display === "none") return;
+          setRowChecked(row, want);
+        });
+        syncAll();
+      });
+    });
+
+    // master toggle: affects all visible rows
+    el("selectAll").addEventListener("change", function () {
+      var want = el("selectAll").checked;
+      document.querySelectorAll("#picker .row").forEach(function (row) {
+        if (row.style.display === "none") return;
+        setRowChecked(row, want);
+      });
+      syncAll();
+    });
+
+    syncAll();
   }
 
   function buildStrategyList() {
@@ -344,32 +458,40 @@
         (runnable ? "" : " <span class='muted small'>(not runnable in explorer)</span>") +
         "</div><div class='ds'>" + (s.description || "") + "</div></div></div>";
     });
-    document.getElementById("stratlist").innerHTML = html;
+    el("stratlist").innerHTML = html;
   }
 
   function wireControls() {
-    document.getElementById("updateBtn").addEventListener("click", update);
-    document.getElementById("clearBtn").addEventListener("click", function () {
-      document.querySelectorAll("#picker input[type=checkbox]").forEach(function (cb) {
-        cb.checked = false; cb.parentElement.querySelector("input[type=number]").disabled = true;
+    el("updateBtn").addEventListener("click", rebuild);
+    el("clearBtn").addEventListener("click", function () {
+      document.querySelectorAll("#picker .row").forEach(function (row) {
+        setRowChecked(row, false);
       });
       document.querySelectorAll("#stratlist input[type=checkbox]").forEach(function (cb) { cb.checked = false; });
-      update();
+      syncAll();
+      rebuild();
     });
-    document.getElementById("smoothing").addEventListener("change", function () {
-      document.getElementById("rollwrap").style.display =
-        this.value === "R" ? "block" : "none";
-      update();
+    el("smoothing").addEventListener("change", function () {
+      el("rollwrap").style.display = this.value === "R" ? "block" : "none";
+      renderWindow();
     });
-    document.getElementById("rollwin").addEventListener("change", update);
-    document.getElementById("fee").addEventListener("change", update);
-    document.getElementById("search").addEventListener("input", function () {
+    el("rollwin").addEventListener("change", renderWindow);
+    el("fee").addEventListener("change", renderWindow);
+    el("startDate").addEventListener("change", renderWindow);
+    el("endDate").addEventListener("change", renderWindow);
+    el("fullRangeBtn").addEventListener("click", function () {
+      if (fullPortfolio) { setDateBounds(fullPortfolio); renderWindow(); }
+    });
+    // recompute strategy overlays live when the strategy selection changes
+    document.addEventListener("change", function (ev) {
+      if (ev.target && ev.target.closest && ev.target.closest("#stratlist")) renderWindow();
+    });
+    el("search").addEventListener("input", function () {
       var q = this.value.trim().toLowerCase();
       document.querySelectorAll("#picker .sectorgroup").forEach(function (g) {
         var any = false;
         g.querySelectorAll(".row").forEach(function (r) {
-          var show = !q || r.getAttribute("data-ticker").indexOf(q) === 0 ||
-            r.getAttribute("data-ticker").indexOf(q) > -1;
+          var show = !q || r.getAttribute("data-ticker").indexOf(q) > -1;
           r.style.display = show ? "flex" : "none";
           if (show) any = true;
         });
@@ -383,12 +505,11 @@
       .then(function (res) {
         manifest = res[0]; strategies = res[1];
         buildPicker(); buildStrategyList(); wireControls();
-        document.getElementById("status").textContent =
+        el("status").textContent =
           manifest.tickers.length + " tickers available. Select some and press Update portfolio.";
       })
       .catch(function (e) {
-        document.getElementById("status").textContent =
-          "Could not load data files: " + e.message;
+        el("status").textContent = "Could not load data files: " + e.message;
       });
   }
 

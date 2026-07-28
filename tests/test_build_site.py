@@ -29,7 +29,7 @@ def test_build_site_writes_all_pages_and_assets(tmp_path):
                           {"sharpe": 1.0}, {"sharpe": (0.5, 1.5)}, {}, root=root)
     out = str(tmp_path / "site")
     build_site.build_site(results_root=root, out_dir=out, export_prices=False)
-    for rel in ["index.html", "strategies.html", "explorer.html",
+    for rel in ["index.html", "strategies.html", "explorer.html", "glossary.html",
                 "assets/style.css", "assets/explorer.js", "assets/plotly.min.js",
                 "strategy/ma_crossover.html", "strategy/buy_and_hold.html"]:
         assert os.path.exists(os.path.join(out, rel)), rel
@@ -43,6 +43,38 @@ def test_build_site_writes_all_pages_and_assets(tmp_path):
     home = open(os.path.join(out, "index.html"), encoding="utf-8").read()
     assert "assets/plotly.min.js" in home
     assert "cdn.plot.ly" not in home
+
+def test_glossary_page_and_info_links(tmp_path):
+    root = str(tmp_path / "results")
+    results.append_result("ma_crossover", "2026-07-27", "AAPL",
+                          {"sharpe": 1.0, "total_return": 0.2}, {"sharpe": (0.5, 1.5)},
+                          {}, root=root)
+    out = str(tmp_path / "site")
+    build_site.build_site(results_root=root, out_dir=out, export_prices=False)
+    glossary = open(os.path.join(out, "glossary.html"), encoding="utf-8").read()
+    # every term anchor is present
+    for key in ["sharpe", "cagr", "max_drawdown", "total_return", "win_rate",
+                "confidence_interval", "benchmark", "universe"]:
+        assert f'id="{key}"' in glossary, key
+    # overview metric headers carry info links to glossary anchors
+    home = open(os.path.join(out, "index.html"), encoding="utf-8").read()
+    assert "glossary.html#sharpe" in home
+    assert 'class="info"' in home
+    # nav includes the glossary on every page
+    assert "glossary.html" in home
+    # explorer exposes date-window controls
+    explorer = open(os.path.join(out, "explorer.html"), encoding="utf-8").read()
+    assert 'id="startDate"' in explorer and 'id="endDate"' in explorer
+
+def test_explorer_js_has_select_all_and_sector_toggles(tmp_path):
+    out = str(tmp_path / "site")
+    build_site.build_site(results_root=str(tmp_path / "results"), out_dir=out,
+                          export_prices=False)
+    js = open(os.path.join(out, "assets", "explorer.js"), encoding="utf-8").read()
+    # master "all" control and per-sector toggle wiring exist
+    assert "selectAll" in js
+    assert "sec-toggle" in js
+    assert "indeterminate" in js  # partial-selection state on group/master boxes
 
 def test_export_data_writes_manifest_and_prices(tmp_path):
     # a tiny fake price store and category file

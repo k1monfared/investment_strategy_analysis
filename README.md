@@ -16,6 +16,7 @@ to GitHub Pages.
 
 - [How it works](#how-it-works)
 - [The dashboard](#the-dashboard)
+- [Glossary and info links](#glossary-and-info-links)
 - [FOSS stack](#foss-stack)
 - [Repository layout](#repository-layout)
 - [Local setup](#local-setup)
@@ -80,12 +81,15 @@ browser:
 - Build a portfolio by ticking tickers (grouped by sector, with a search box) and typing
   a relative weight in the box next to each. Weights are normalized to a dollar-weighted
   index.
-- Chart the portfolio value over its full history, indexed to 100 at the first common
-  date. Choose the frequency: daily, weekly (last), monthly (last), or a rolling mean
-  with a configurable window.
+- Choose a start and end date to run the simulation over just that window. Every curve
+  reindexes to 100 at the window start and every metric recomputes for the window. A
+  "Full range" button resets to the whole available history.
+- Chart the portfolio value over the chosen window. Choose the frequency: daily, weekly
+  (last), monthly (last), or a rolling mean with a configurable window.
 - Tick one or more strategies to overlay their equity curves on that exact portfolio,
   always drawn against a dotted buy and hold baseline, with a live metrics table
-  (total return, CAGR, Sharpe, max drawdown). A per-trade cost input models friction.
+  (total return, CAGR, Sharpe, max drawdown, win rate). A per-trade cost input models
+  friction.
 
 To make this work `isa build` also exports, under `site/data/`, a compact price series
 per ticker as JSON, a ticker and sector manifest, and strategy metadata. Each strategy
@@ -95,6 +99,20 @@ Strategies without a `client` spec still appear but are disabled in the Explorer
 The Explorer recomputes strategies client-side for responsiveness, so its numbers are
 indicative and can differ slightly from the committed Python engine results shown on the
 Overview and detail pages.
+
+## Glossary and info links
+
+Financial metrics are not obvious to everyone, so the dashboard explains them in place.
+A dedicated Glossary page (`glossary.html`) gives plain-language explanations of every
+metric and concept: total return, CAGR, Sharpe ratio, maximum drawdown, win rate,
+confidence intervals, equity curves, benchmarks, universes, and smoothing. Longer
+explanations describe not just the formula but how to read the number and what it hides.
+
+Throughout the site, a small circular `i` marker sits next to each metric, for example in
+the Overview table headers and the Explorer metrics table. Clicking it jumps straight to
+that term's entry in the Glossary. Glossary content is defined in `src/isa/glossary.py`,
+so adding or editing a definition is a one-file change that updates every info link and
+the Glossary page at once.
 
 ## FOSS stack
 
@@ -129,7 +147,8 @@ site/               generated static dashboard
   strategies.html   index of all strategies
   strategy/<id>.html per-strategy description, parameters, results
   explorer.html     interactive portfolio and strategy explorer
-  assets/           style.css and explorer.js
+  glossary.html     plain-language explanations of metrics and concepts
+  assets/           style.css, explorer.js, plotly.min.js
   data/             manifest.json, strategies.json, prices/<TICKER>.json
 tests/              pytest suite
 docs/               specs, plans, and the runbook

@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary</title>
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/plotly.min.js"></script>
+</head>
+<body>
+<header class="topnav"><div class="wrap">
+<span class="brand">Investment Strategy Analysis</span>
+<nav>
+<a href="index.html">Overview</a>
+<a href="strategies.html">Strategies</a>
+<a href="explorer.html">Explorer</a>
+<a href="glossary.html" class="active">Glossary</a>
+</nav>
+</div></header>
+<main>
+
+<h1 id="top">Glossary</h1>
+<p class="lead">Plain-language explanations of the metrics and concepts used across the
+dashboard. Throughout the site, an <span class="info">i</span> marker next to a term
+links back here.</p>
+<div class="toc-inline"><a href="#total_return">Total return</a><a href="#cagr">CAGR (Compound Annual Growth Rate)</a><a href="#sharpe">Sharpe ratio</a><a href="#max_drawdown">Maximum drawdown</a><a href="#win_rate">Win rate</a><a href="#confidence_interval">Confidence interval</a><a href="#equity_curve">Equity curve</a><a href="#benchmark">Benchmark and buy and hold</a><a href="#universe">Universe</a><a href="#smoothing">Frequency and smoothing</a></div>
+<div class="card glossary"><div class="term" id="total_return"><h2>Total return</h2><p class="muted small">The overall percentage gain or loss over the whole period.</p><p>Total return is the simplest performance number: how much an investment grew or
+shrank over the full period, expressed as a percentage of the starting value. A total
+return of 50% means one dollar became one dollar and fifty cents. A total return of
+-20% means one dollar became eighty cents.</p>
+<p class="formula">total_return = ending_value / starting_value - 1</p>
+<p>What it tells you: the raw bottom line. What it hides: <em>when</em> the gains
+happened and how bumpy the ride was. A strategy that doubled your money over 30 years
+and one that doubled it over 3 years both show a 100% total return, even though they are
+very different. For that reason total return is best read alongside
+<a href="glossary.html#cagr">CAGR</a> (which puts it on a per-year basis) and
+<a href="glossary.html#max_drawdown">maximum drawdown</a> (which shows the worst dip
+along the way).</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="cagr"><h2>CAGR (Compound Annual Growth Rate)</h2><p class="muted small">The average yearly growth rate, smoothed as if it were steady.</p><p>CAGR stands for Compound Annual Growth Rate. It answers the question: at what steady
+yearly rate would the investment have had to grow to get from its starting value to its
+ending value over the period? It converts a total return over many years into a single
+comparable per-year number.</p>
+<p class="formula">CAGR = (ending_value / starting_value) ^ (1 / years) - 1</p>
+<p>For example, growing from 100 to 200 over 10 years is a 100% total return, but a CAGR
+of about 7.2% per year, because <code>1.072 ^ 10</code> is roughly 2. The word
+<em>compound</em> matters: each year's growth builds on the previous year's, so CAGR is
+not simply the total return divided by the number of years.</p>
+<p>Why it is useful: it lets you compare strategies or assets that ran over different
+lengths of time on an equal, annualized footing. What it hides: like total return, it
+says nothing about volatility or the worst loss along the way. Two investments can share
+a CAGR while one moved smoothly and the other lurched violently.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="sharpe"><h2>Sharpe ratio</h2><p class="muted small">Return earned per unit of risk. Higher is better.</p><p>The Sharpe ratio measures return <em>per unit of risk</em>. Two strategies might earn
+the same average return, but if one does it with wild swings and the other does it
+smoothly, the smooth one is better in a risk-adjusted sense. The Sharpe ratio captures
+exactly that: it divides the average return by how much the returns bounce around, then
+scales the result to a yearly figure.</p>
+<p class="formula">Sharpe = (mean daily return / standard deviation of daily returns) * sqrt(252)</p>
+<p>The <code>sqrt(252)</code> factor annualizes it, since there are about 252 trading
+days in a year. In the strictest definition you subtract a risk-free rate from the
+return first. This dashboard uses a risk-free rate of zero, which is a common
+simplification for comparing strategies against each other.</p>
+<p>How to read it, as a rough guide:</p>
+<ul>
+<li>Below 1: the returns are modest relative to their volatility.</li>
+<li>Around 1: a solid, respectable risk-adjusted return.</li>
+<li>Above 2: excellent, and worth double checking that it is not a fluke of a short or
+lucky sample.</li>
+</ul>
+<p>Why it is the headline metric here: it rewards strategies that make money calmly and
+penalizes those that only make money by taking big risks. The
+<a href="glossary.html#confidence_interval">confidence interval</a> shown next to each
+Sharpe on the Overview tells you how much to trust the estimate.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="max_drawdown"><h2>Maximum drawdown</h2><p class="muted small">The worst peak-to-trough drop. How bad the deepest loss got.</p><p>Maximum drawdown is the largest drop from a previous high point to a following low
+point, before a new high is reached. If your portfolio climbed to 100, fell to 65, then
+later recovered, the maximum drawdown over that stretch was -35%. It is the single
+number that best captures "how bad did it get" and, by extension, how much pain you
+would have had to sit through.</p>
+<p class="formula">drawdown at time t = value_t / (highest value up to t) - 1</p>
+<p>Maximum drawdown is the most negative value this takes over the whole period. It is
+always zero or negative, and a value closer to zero is better.</p>
+<p>Why it matters: two strategies can have the same <a href="glossary.html#cagr">CAGR</a>,
+but the one with a shallower maximum drawdown is far easier to actually hold through a
+downturn. Deep drawdowns are where investors panic and sell at the bottom. A strategy is
+only useful if you can stay invested in it, so drawdown is a practical measure of
+survivability, not just a statistic.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="win_rate"><h2>Win rate</h2><p class="muted small">The fraction of periods with a positive return.</p><p>Win rate is the fraction of periods, here trading days, on which the return was
+positive. A win rate of 0.54 means the portfolio rose on 54% of days and fell on the
+rest.</p>
+<p>What it tells you: how often the strategy is "right" in the short term. What it does
+not tell you: how big the wins and losses are. A strategy can win on most days with
+small gains yet still lose money overall if its occasional losing days are large. The
+reverse is also true, some excellent strategies win less than half the time but make far
+more on their winners than they lose on their losers. Read win rate together with
+<a href="glossary.html#total_return">total return</a> and
+<a href="glossary.html#sharpe">Sharpe</a>, never on its own.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="confidence_interval"><h2>Confidence interval</h2><p class="muted small">A plausible range for a metric, not a single guess.</p><p>Any performance number computed from history is an estimate, not a certainty. If the
+same strategy had experienced a slightly different sequence of ups and downs, its Sharpe
+ratio would have come out a little different. A confidence interval expresses that
+uncertainty as a range rather than a single point. The 95% interval shown on the
+Overview means: if we resampled the history many times, about 95% of the resulting
+Sharpe estimates would fall inside this band.</p>
+<p>This project builds the interval with a <em>stationary block bootstrap</em>. Instead
+of shuffling individual daily returns, which would destroy the natural streaks and
+momentum in markets, it resamples contiguous blocks of days. That preserves the
+autocorrelation, the tendency of returns to cluster, so the interval is realistic.</p>
+<p>How to use it: when comparing two strategies, look at whether their intervals overlap.
+If strategy A has a higher Sharpe than strategy B but their confidence intervals overlap
+heavily, the difference may not be meaningful. Wide intervals are a signal to be
+cautious, often a sign of a short sample or very volatile returns.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="equity_curve"><h2>Equity curve</h2><p class="muted small">The value of the strategy over time, indexed to 100 at the start.</p><p>An equity curve is the line showing what a strategy would have been worth over time,
+starting from a common base of 100. It is the most direct picture of a strategy: an
+upward, steady line is good, a jagged line with deep valleys is risky, and a flat line
+means the strategy sat in cash.</p>
+<p>On this dashboard every equity curve is indexed to 100 at the start of the selected
+window, so different strategies and portfolios can be compared on the same scale
+regardless of their actual dollar prices. The vertical distance between two curves at
+any date shows how much one strategy was ahead of another up to that point. The depth of
+each dip is the <a href="glossary.html#max_drawdown">drawdown</a> at that moment.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="benchmark"><h2>Benchmark and buy and hold</h2><p class="muted small">The do-nothing reference every strategy is compared against.</p><p>A benchmark is a simple reference strategy that active strategies must beat to justify
+their trading. The natural benchmark is <strong>buy and hold</strong>: buy the portfolio
+on day one, hold it to the end, and never trade. It has no rules and no costs beyond the
+initial purchase.</p>
+<p>Why every comparison here includes it: trading has costs, and doing nothing is
+free. If a rule-based strategy cannot beat buy and hold on a risk-adjusted basis, the
+rule is not adding value. On the Explorer, buy and hold is always drawn as a dotted grey
+line so you can immediately see whether a strategy actually improved on simply holding
+the portfolio.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="universe"><h2>Universe</h2><p class="muted small">The set of stocks a strategy is run over.</p><p>A universe is the set of securities a strategy is applied to. It can be a single stock
+such as <code>AAPL</code>, a whole sector such as <code>sector:Information Technology</code>,
+an index such as <code>index:sp500</code>, a user-defined theme, or the entire market.
+The same strategy can be run across any universe, and results are recorded separately for
+each one, which is why the Overview table has both a strategy column and a universe
+column.</p>
+<p>Running one strategy across many universes shows where its edge is real and where it
+is not. A trend rule might shine in one sector and struggle in another, and comparing
+those rows is often more informative than a single headline number.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="smoothing"><h2>Frequency and smoothing</h2><p class="muted small">Daily detail versus weekly, monthly, or rolling-average views.</p><p>Daily prices are noisy. The frequency control lets you step back and see the shape of
+a series without the day-to-day jitter.</p>
+<ul>
+<li><strong>Daily</strong>: every trading day, the raw series.</li>
+<li><strong>Weekly (last)</strong> and <strong>Monthly (last)</strong>: keep only the
+last value in each week or month. This thins the line while preserving the actual levels
+the series reached.</li>
+<li><strong>Rolling mean</strong>: replace each point with the average of the last N
+days. This smooths the line to reveal the trend, but note that a rolling average lags
+turning points and slightly dampens peaks and troughs.</li>
+</ul>
+<p>Smoothing changes only how the data is displayed and summarized. It does not change
+the underlying prices or the dates the strategy trades on.</p><p class="small"><a href="#top">Back to top</a></p></div></div>
+
+</main>
+<footer class="foot">
+Generated static dashboard. Metrics come from committed backtest results. The Explorer
+recomputes strategies in the browser for interactive comparison, so its numbers are
+indicative and may differ slightly from the committed engine results.
+</footer>
+</body>
+</html>
