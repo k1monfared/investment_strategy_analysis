@@ -1,0 +1,11 @@
+yfinance
+pandas
+pyarrow
+duckdb
+vectorbt
+quantstats
+empyrical-reloaded
+arch
+plotly
+pyyaml
+pytest
