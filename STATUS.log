@@ -1,22 +1,22 @@
 - Project Status
-    - Last Updated: YYYY-MM-DD
-    - Development Mode: [Claude Code | Manual | Hybrid]
-    - Stage: Initial Setup
-    - Next Milestone: [Description of next goal]
+    - Last Updated: 2026-07-27
+    - Development Mode: Claude Code
+    - Stage: Proof of Concept
+    - Next Milestone: Populate real S&P 500 data and publish the first live dashboard
 
 - Development Stages
     - [x] Initial Setup
-        - Created: YYYY-MM-DD
+        - Created: 2026-07-27
         - Repository initialized
         - Basic structure in place
         - Template copied from claude_code_project_template
-    - [] Proof of Concept (POC)
-        - Target: YYYY-MM-DD
+    - [x] Proof of Concept (POC)
+        - Target: 2026-07-27
         - Goal: Validate core concept and technology choices
         - Success criteria:
-            - [] Key feature X works
-            - [] Technology stack validated
-            - [] Basic end-to-end flow demonstrated
+            - [x] Key feature works: strategy backtest across a universe with confidence intervals
+            - [x] Technology stack validated: yfinance, DuckDB, vectorbt, arch, plotly all integrated
+            - [x] Basic end-to-end flow demonstrated: seed, update, run, build via the isa CLI
     - [] Minimum Viable Product (MVP)
         - Goal: First usable version with core features
         - Core features:
@@ -47,23 +47,39 @@
 
 - Technical Details
     - Tech Stack:
-        - [List technologies, languages, frameworks]
+        - Python 3.11 plus
+        - Data: yfinance, pandas, pyarrow, DuckDB
+        - Backtesting: vectorbt, quantstats, empyrical-reloaded, arch
+        - Dashboard: plotly static HTML, GitHub Pages
+        - Scheduling: GitHub Actions cron
     - Key Files:
-        - [Important files and their purposes]
+        - src/isa/prices.py: per-ticker Parquet store and DuckDB universe reader
+        - src/isa/fetch.py: incremental price fetch and update with injectable fetcher
+        - src/isa/universe.py: resolve all, ticker, sector, index, theme specs
+        - src/isa/seed_categories.py: seed sectors and membership from Wikipedia S&P 500
+        - src/isa/strategy.py: META interface and auto-discovery of strategies
+        - src/isa/engine.py: vectorbt backtest engine and core metrics
+        - src/isa/stats.py: stationary bootstrap confidence intervals
+        - src/isa/results.py: append-only results store and equity curves
+        - src/isa/runner.py: orchestrates strategy x universe runs
+        - src/isa/build_site.py: static Plotly dashboard generation
+        - src/isa/cli.py: isa CLI with seed, update, run, build
+        - strategies/: one file per strategy, discovered automatically
     - Architecture Notes:
-        - [Key design decisions]
-        - [Patterns used]
-        - [Dependencies]
+        - Thin glue over mature FOSS, not a framework
+        - Each ticker is an independent Parquet file, queried by DuckDB glob
+        - CI bounds stored at write time so the dashboard stays read-only and fast
+        - Everything runnable locally via the same CLI the workflow calls
 
 - Current Focus
     - Active Tasks:
-        - [] Task 1
-        - [] Task 2
+        - [] Populate real S&P 500 price data with isa seed and isa update
+        - [] Run strategies and publish the first live dashboard
     - Blockers:
-        - [Any blocking issues]
+        - None
     - Recent Progress:
-        - YYYY-MM-DD: [What was accomplished]
-        - YYYY-MM-DD: [What was accomplished]
+        - 2026-07-27: Completed Tasks 1 through 14, full test suite green (34 tests)
+        - 2026-07-27: End-to-end pipeline working, per-task commits on feature/isa-implementation
 
 - Notes
     - Use loglog format for all documentation
