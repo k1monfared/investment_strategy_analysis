@@ -1,0 +1,80 @@
+- FOSS Research Notes
+    - Date: 2026-07-27
+    - Purpose: survey existing FOSS before building, so we leverage tools and experience rather than reinvent
+    - Companion to the design spec: [[2026-07-27-investment-strategy-analysis-design]]
+
+- Market data ingestion and storage
+    - Client libraries
+        - yfinance: unofficial Yahoo scraper, stocks ETFs funds, no key, Apache 2.0, active, personal-use ToS, survivorship bias caveat
+        - pandas-datareader: thin reader for Stooq, Tiingo, IEX, FRED, BSD-3, stable low-activity
+        - Stooq via pandas-datareader: free global EOD, no key, non-commercial ToS, good cross-check source
+        - Tiingo: freemium key, clean adjusted EOD, MIT client, best-licensed free tier if a key is acceptable
+        - Alpha Vantage: freemium key, ~500 calls/day, too slow for bulk
+    - Aggregation frameworks
+        - OpenBB: 100+ providers behind one API, AGPL-3.0 core, very active, powerful but heavy
+        - findatapy: unified API, FX and macro leaning, Apache 2.0
+    - Storage at all-US-daily scale, which is only low hundreds of millions of rows and a few GB compressed
+        - Parquet via PyArrow or Polars: columnar, compressed, portable, ideal baseline, partition by ticker
+        - DuckDB: embedded OLAP, queries Parquet in place with SQL, MIT, best query layer
+        - ArcticDB: nice versioning but BSL 1.1 licensing friction
+        - SQLite: fine but weaker for columnar scans
+        - TimescaleDB and InfluxDB: overkill for single-user daily bars
+    - Scheduling
+        - cron: fine until retries and visibility needed
+        - Prefect: best low-overhead upgrade, Apache 2.0
+        - Dagster and Airflow: overkill for solo
+    - Chosen: per-ticker Parquet plus DuckDB, yfinance and Stooq for fetch, GitHub Actions cron for scheduling
+
+- Backtesting and simulation
+    - Frameworks
+        - vectorbt OSS: vectorized, extremely fast across thousands of symbols, Apache 2.0 plus Commons Clause, OSS edition stagnant as dev moved to paid PRO, license acceptable for a non-sold tool
+        - zipline-reloaded: event-driven, Apache 2.0, genuinely maintained, the fully-unencumbered alternative, slower
+        - bt: portfolio rebalancing, MIT, good for allocation strategies
+        - backtrader: effectively unmaintained, avoid
+        - backtesting.py: single-asset, AGPL-3.0, active but not for many symbols
+        - PyAlgoTrade: dead, avoid
+        - LEAN QuantConnect: very active but heavy C# infra
+    - Analytics
+        - Quantopian originals empyrical, pyfolio, alphalens are abandoned, use the stefan-jansen -reloaded forks
+        - quantstats: one-call HTML tearsheets, actively maintained
+        - empyrical-reloaded: programmatic metrics, Python 3.13 and NumPy 2.0
+    - Strategy representation paradigms
+        - vectorized signals: fastest, scales trivially, harder for path-dependent logic
+        - event-driven callbacks: most flexible and realistic, slowest
+        - signal or weight functions: composable rebalancing
+        - our choice: expose a signal-function abstraction on a vectorized engine
+    - Confidence intervals
+        - arch.bootstrap provides StationaryBootstrap and CircularBlockBootstrap plus SPA reality-check tests
+        - block bootstrap for CIs, SPA for multiple-testing correction, 5000 to 10000 resamples
+    - Chosen: vectorbt OSS plus quantstats and empyrical-reloaded plus arch
+
+- Categorization and classification
+    - Taxonomies
+        - GICS and ICB and Morningstar categories are proprietary and licensed, cannot redistribute
+        - SIC is public domain and comes with free SEC company mappings, the FOSS-friendly backbone
+        - NAICS structure free but company mapping not provided
+    - Free sources per ticker
+        - SEC EDGAR: official, no key, company_tickers.json plus submissions give sic and sicDescription, requires descriptive User-Agent and backoff, SIC is coarse
+        - yfinance: sector and industry fields plus Sector and Industry modules, GICS-like, unofficial so build fallbacks
+        - Wikipedia S&P 500 table: CC BY-SA, read_html, includes GICS sector for constituents, good seed data
+        - FMP and Finnhub free tiers: structured sectors but tight limits
+    - ETF and fund holdings
+        - SEC N-PORT: free monthly holdings since 2019, authoritative, XML parsing
+        - yfinance: fund and ETF holdings fields
+    - Custom themes: no FOSS taxonomy, use user-defined static ticker lists in YAML, seed from thematic ETF holdings and index tables
+    - Chosen: SEC EDGAR backbone enriched by yfinance, Wikipedia to seed membership, user tag files for themes
+
+- Dashboard, storage of results, scheduling for publishing
+    - App frameworks
+        - Streamlit: Apache 2.0, lowest friction, auto-growing content trivial, but needs a running server so not directly Pages-compatible
+        - Dash, Panel, Voila, Gradio, Grafana: each heavier or niche for this use
+        - Quarto and Jupyter Book: static site output, good for published reports with no interactivity
+    - Charting
+        - Plotly: interactive, CI bands via fill, embeds well, MIT, chosen
+        - matplotlib for static exports only
+    - Results persistence
+        - DuckDB over Parquet, append row-per strategy-run-metric, store CI bounds at write time so the dashboard stays read-only and fast
+    - Scheduling
+        - systemd timer is the best local option, but on GitHub the scheduler is GitHub Actions cron
+    - Constraint that shaped the choice: GitHub Pages serves static files only, so the dashboard is pre-rendered static HTML with embedded Plotly, and the scheduler is GitHub Actions, not a live server
+    - Visualization rules carried into the design: zero-baseline bars, line or dot or slope charts for emphasizing change, no emojis
