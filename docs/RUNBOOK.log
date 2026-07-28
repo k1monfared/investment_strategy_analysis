@@ -1,0 +1,18 @@
+- Runbook
+    - Local usage
+        - Install: pip install -r requirements.txt && pip install -e .
+        - Seed categories: isa seed
+        - Update prices: isa update --universe index:sp500
+        - Run backtests: isa run --universes index:sp500 sector:Technology
+        - Build dashboard: isa build --out-dir site
+        - Open site/index.html in a browser
+    - GitHub Actions
+        - Runs weekly on Monday plus manual dispatch
+        - Requires Pages enabled with GitHub Actions as the source
+        - Price files cached between runs, results committed back to the repo
+    - Adding a ticker manually
+        - Drop a Parquet file in data/prices named TICKER.parquet with the standard columns
+        - It is picked up automatically by universe:all and any category it belongs to
+    - Adding a strategy
+        - Create strategies/<id>.py with a META dict and a generate function
+        - It is discovered automatically on the next run and appears on the dashboard

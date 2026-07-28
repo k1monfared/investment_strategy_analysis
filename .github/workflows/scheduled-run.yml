@@ -1,0 +1,45 @@
+name: scheduled-run
+on:
+  schedule:
+    - cron: "17 6 * * 1"  # weekly, Monday 06:17 UTC
+  workflow_dispatch:
+    inputs:
+      universes:
+        description: "space-separated universe specs"
+        default: "index:sp500"
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Cache price store
+        uses: actions/cache@v4
+        with:
+          path: data/prices
+          key: prices-${{ github.run_id }}
+          restore-keys: prices-
+      - run: pip install -r requirements.txt && pip install -e .
+      - run: isa seed
+      - run: isa update --universe "index:sp500"
+      - run: isa run --universes ${{ github.event.inputs.universes || 'index:sp500' }}
+      - run: isa build --out-dir site
+      - name: Commit results
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add results data/categories
+          git commit -m "chore: scheduled run results" || echo "no changes"
+          git push || echo "nothing to push"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4
