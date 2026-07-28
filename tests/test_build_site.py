@@ -30,7 +30,7 @@ def test_build_site_writes_all_pages_and_assets(tmp_path):
     out = str(tmp_path / "site")
     build_site.build_site(results_root=root, out_dir=out, export_prices=False)
     for rel in ["index.html", "strategies.html", "explorer.html",
-                "assets/style.css", "assets/explorer.js",
+                "assets/style.css", "assets/explorer.js", "assets/plotly.min.js",
                 "strategy/ma_crossover.html", "strategy/buy_and_hold.html"]:
         assert os.path.exists(os.path.join(out, rel)), rel
     # strategy index links to detail pages
@@ -39,6 +39,10 @@ def test_build_site_writes_all_pages_and_assets(tmp_path):
     # detail page carries the long description
     detail = open(os.path.join(out, "strategy", "ma_crossover.html"), encoding="utf-8").read()
     assert "trend-following" in detail
+    # pages load Plotly from the self-hosted asset, not a CDN
+    home = open(os.path.join(out, "index.html"), encoding="utf-8").read()
+    assert "assets/plotly.min.js" in home
+    assert "cdn.plot.ly" not in home
 
 def test_export_data_writes_manifest_and_prices(tmp_path):
     # a tiny fake price store and category file

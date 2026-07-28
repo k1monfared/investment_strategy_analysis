@@ -46,6 +46,18 @@ def comparison_table(results_df):
     return df.pivot_table(index="row", columns="metric", values="value", aggfunc="last")
 
 
+def _copy_plotly(assets_dir):
+    """Copy the vendored Plotly bundle into the site assets directory."""
+    src = os.path.join(os.path.dirname(__file__), "vendor", "plotly.min.js")
+    dst = os.path.join(assets_dir, "plotly.min.js")
+    if not os.path.exists(src):
+        raise FileNotFoundError(
+            f"vendored Plotly not found at {src}. Expected isa/vendor/plotly.min.js")
+    import shutil
+    shutil.copyfile(src, dst)
+    return dst
+
+
 def _load_strategies(folder):
     try:
         mods = strategy_mod.discover_strategies(folder)
@@ -81,6 +93,7 @@ def _page(title, active, body, depth=0):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <link rel="stylesheet" href="{up}assets/style.css">
+<script src="{up}assets/plotly.min.js"></script>
 </head>
 <body>
 <header class="topnav"><div class="wrap">
@@ -160,7 +173,9 @@ def _sharpe_dot_chart(results_df):
         title="Sharpe by strategy and universe (dot plot with 95% CI)",
         xaxis_title="Sharpe", yaxis_title="", margin=dict(l=10, r=20, t=40, b=40),
         height=max(320, 26 * len(sh) + 120), template="simple_white")
-    return to_html(fig, include_plotlyjs="cdn", full_html=False,
+    # Plotly is already loaded from the self-hosted assets/plotly.min.js in the page
+    # head, so do not embed or link it again here.
+    return to_html(fig, include_plotlyjs=False, full_html=False,
                    config={"displayModeBar": False})
 
 
@@ -318,9 +333,8 @@ buy and hold baseline.</p>
     </div>
   </div>
 </div>
-<script src="%PLOTLY%"></script>
 <script src="assets/explorer.js"></script>
-""".replace("%PLOTLY%", web_assets.PLOTLY_CDN)
+"""
 
 
 # --------------------------------------------------------------- data export
@@ -378,6 +392,8 @@ def build_site(results_root="results", out_dir="site",
         f.write(web_assets.STYLE_CSS)
     with open(os.path.join(assets_dir, "explorer.js"), "w", encoding="utf-8") as f:
         f.write(web_assets.EXPLORER_JS)
+    # self-hosted Plotly so charts render without any CDN dependency
+    _copy_plotly(assets_dir)
 
     df = results_mod.load_results(root=results_root)
     strategies = _load_strategies(strategies_folder)

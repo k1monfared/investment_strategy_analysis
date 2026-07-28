@@ -4,7 +4,10 @@ Kept as plain strings so build_site.py can write them verbatim. No emojis in any
 generated output, per project visualization rules.
 """
 
-PLOTLY_CDN = "https://cdn.plot.ly/plotly-2.35.2.min.js"
+# Plotly is self-hosted (vendored under isa/vendor/plotly.min.js and copied into
+# site/assets/ by build_site) so the dashboard works offline and behind strict content
+# security policies, instead of depending on a CDN that may be blocked.
+PLOTLY_LOCAL = "assets/plotly.min.js"
 
 STYLE_CSS = """
 :root {
