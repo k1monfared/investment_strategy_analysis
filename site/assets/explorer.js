@@ -323,7 +323,7 @@
   }
 
   function init() {
-    Promise.all([getJSON(DATA + "manifest.json"), getJSON(DATA + "strategies.json")])
+    Promise.all([getJSON("data/manifest.json"), getJSON("data/strategies.json")])
       .then(function (res) {
         manifest = res[0]; strategies = res[1];
         buildPicker(); buildStrategyList(); wireControls();

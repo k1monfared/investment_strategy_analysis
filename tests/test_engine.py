@@ -17,3 +17,21 @@ def test_benchmark_beats_zero_on_uptrend():
     mods = {m.META["id"]: m for m in strategy.discover_strategies("strategies")}
     res = engine.run_backtest(mods["buy_and_hold"], _prices())
     assert res.metrics["total_return"] > 0
+
+def test_dca_runs_and_reports_metrics():
+    mods = {m.META["id"]: m for m in strategy.discover_strategies("strategies")}
+    res = engine.run_backtest(mods["dollar_cost_averaging"], _prices())
+    assert set(res.metrics) == {"total_return", "cagr", "sharpe", "max_drawdown", "win_rate"}
+    assert len(res.equity_curve) == len(_prices())
+    # money-weighted curve starts at 100 and is finite
+    assert abs(res.equity_curve.iloc[0] - 100.0) < 1e-9
+    assert res.metrics["total_return"] == res.metrics["total_return"]
+
+def test_dca_trails_lump_sum_on_steady_uptrend():
+    # On a monotonic uptrend, buy-and-hold (fully invested from day one) should end
+    # ahead of DCA (which adds cash gradually and misses early gains).
+    mods = {m.META["id"]: m for m in strategy.discover_strategies("strategies")}
+    px = _prices()
+    bh = engine.run_backtest(mods["buy_and_hold"], px)
+    dca = engine.run_backtest(mods["dollar_cost_averaging"], px)
+    assert bh.metrics["total_return"] > dca.metrics["total_return"]

@@ -337,7 +337,24 @@ ENGINE_JS = r"""
     pos.fill(1);
     return pos;
   }
+  // Dollar cost averaging: contribute a fixed amount every `every` bars into the
+  // portfolio index. The reported curve is money-weighted (value / cumulative
+  // contributions) indexed to 100, so it is comparable to the 100-indexed lump-sum
+  // curves. Buys more units when the level is low, fewer when it is high.
+  function dcaEquity(spec, portfolio) {
+    var lvl = portfolio.values;
+    var every = (spec && spec.every) ? spec.every : 21;
+    var units = 0, contrib = 0, out = [];
+    for (var i = 0; i < lvl.length; i++) {
+      var L = lvl[i];
+      if (i % every === 0 && L > 0) { units += 1.0 / L; contrib += 1.0; }
+      out.push(contrib > 0 ? (units * L / contrib) * 100.0 : 100.0);
+    }
+    return { dates: portfolio.dates, values: out };
+  }
+
   function equityFor(spec, portfolio, fee) {
+    if (spec && spec.type === "dca") return dcaEquity(spec, portfolio);
     var vals = portfolio.values;
     var rets = pctChange(vals);
     var pos = positionsFor(spec, vals);
@@ -704,7 +721,7 @@ EXPLORER_JS = r"""
   }
 
   function init() {
-    Promise.all([getJSON(DATA + "manifest.json"), getJSON(DATA + "strategies.json")])
+    Promise.all([getJSON("data/manifest.json"), getJSON("data/strategies.json")])
       .then(function (res) {
         manifest = res[0]; strategies = res[1];
         buildPicker(); buildStrategyList(); wireControls();

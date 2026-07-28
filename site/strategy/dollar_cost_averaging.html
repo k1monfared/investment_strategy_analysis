@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dollar Cost Averaging</title>
+<link rel="stylesheet" href="../assets/style.css">
+<script src="../assets/plotly.min.js"></script>
+</head>
+<body>
+<header class="topnav"><div class="wrap">
+<span class="brand">Investment Strategy Analysis</span>
+<nav>
+<a href="../index.html">Overview</a>
+<a href="../strategies.html" class="active">Strategies</a>
+<a href="../explorer.html">Explorer</a>
+<a href="../glossary.html">Glossary</a>
+</nav>
+</div></header>
+<main>
+
+<p class="small"><a href="../strategies.html">&larr; All strategies</a></p>
+<h1>Dollar Cost Averaging <span class="badge cashflow">cashflow</span></h1>
+<p class="lead">Invest a fixed amount of cash at regular intervals, buying more units when prices are low and fewer when they are high.</p>
+<div class="card desc"><h2>How it works</h2><p>Dollar cost averaging (DCA) is an investment strategy that invests a fixed amount of
+money at regular intervals, regardless of the price at the time. The term was coined by
+Benjamin Graham in his 1949 book The Intelligent Investor. Rather than deciding when to
+buy, the investor commits to a schedule: the same number of dollars each period, month
+after month or, as modeled here, every `every` trading days.</p><p>The mechanism is simple. Because a fixed dollar amount buys a variable number of shares,
+the schedule automatically buys more shares when the price is low and fewer when the
+price is high. Over time this tends to produce a lower average cost per share than
+buying a fixed number of shares each period. Mathematically, the effective average
+purchase price is the harmonic mean of the prices paid, which is always less than or
+equal to the arithmetic mean.</p><p>Parameters:
+- `every` (default 21): the number of trading days between contributions. 21 is roughly
+  one calendar month. A smaller value contributes more often, a larger value less often.
+  In markets with per-trade costs, contributing too frequently can let transaction costs
+  outweigh the benefit of being invested slightly earlier.</p><p>How it behaves and how it is measured here:
+- Each contribution buys into an equal-weight index of the selected universe at that
+  day's price. The equity curve reported is money-weighted: the portfolio value divided
+  by the total cash contributed so far, indexed to 100 at the first contribution. This
+  shows the return earned per dollar invested, so it sits on the same 100-based scale as
+  the lump-sum strategies and can be compared directly.
+- Because capital is added gradually rather than all at once, DCA carries less exposure
+  early on. In a steadily rising market a lump-sum buy and hold usually ends ahead,
+  since the money that DCA holds back misses early gains. In a volatile or initially
+  falling market, DCA can come out ahead by accumulating cheaper shares.</p><p>Important caveat from the literature: DCA as defined by Graham (investing income as it
+arrives) is distinct from the common but different practice of taking a lump sum already
+in hand and spreading it out over time. Vanguard and several academic studies show that
+spreading out a lump sum is usually sub-optimal versus investing it immediately, because
+markets trend up over time. The value of DCA is mostly behavioral and practical: it
+enforces discipline and removes the need to time the market.</p></div>
+<div class="card">
+<h2>Parameters</h2>
+<table class="data"><thead><tr><th>Name</th><th>Default</th></tr></thead>
+<tbody><tr><td class='params'>every</td><td>21</td></tr></tbody></table>
+</div>
+<div class="card">
+<h2>Committed results</h2>
+<table class='data'><thead><tr><th>Universe<a class="info" href="../glossary.html#universe" title="The set of stocks a strategy is run over.">i</a></th><th>Total return<a class="info" href="../glossary.html#total_return" title="The overall percentage gain or loss over the whole period.">i</a></th><th>CAGR<a class="info" href="../glossary.html#cagr" title="The average yearly growth rate, smoothed as if it were steady.">i</a></th><th>Sharpe<a class="info" href="../glossary.html#sharpe" title="Return earned per unit of risk. Higher is better.">i</a></th><th>Max drawdown<a class="info" href="../glossary.html#max_drawdown" title="The worst peak-to-trough drop. How bad the deepest loss got.">i</a></th><th>Win rate<a class="info" href="../glossary.html#win_rate" title="The fraction of periods with a positive return.">i</a></th></tr></thead><tbody><tr><td>index:sp500</td><td>2326.8%</td><td>9.1%</td><td>0.52</td><td>-60.9%</td><td>54.1%</td></tr><tr><td>sector:Energy</td><td>1971.2%</td><td>8.6%</td><td>0.32</td><td>-77.9%</td><td>52.4%</td></tr><tr><td>sector:Financials</td><td>1378.3%</td><td>7.7%</td><td>0.42</td><td>-71.7%</td><td>53.6%</td></tr><tr><td>sector:Health Care</td><td>1758.1%</td><td>8.3%</td><td>0.49</td><td>-49.0%</td><td>52.9%</td></tr><tr><td>sector:Information Technology</td><td>4195.0%</td><td>10.8%</td><td>0.49</td><td>-85.7%</td><td>53.4%</td></tr></tbody></table>
+</div>
+<div class="card"><h2>References</h2><ul><li>Benjamin Graham (1949), The Intelligent Investor</li><li>Vanguard (2012), Dollar-cost averaging just means taking risk later</li><li>Wikipedia, Dollar cost averaging, https://en.wikipedia.org/wiki/Dollar_cost_averaging</li></ul></div>
+<p><a class="btn" href="../explorer.html">Compare it in the Explorer</a></p>
+
+</main>
+<footer class="foot">
+Generated static dashboard. Metrics come from committed backtest results. The Explorer
+recomputes strategies in the browser for interactive comparison, so its numbers are
+indicative and may differ slightly from the committed engine results.
+</footer>
+</body>
+</html>

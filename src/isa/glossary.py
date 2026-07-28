@@ -167,6 +167,31 @@ the portfolio.</p>
 """.strip(),
     },
     {
+        "key": "dollar_cost_averaging",
+        "title": "Dollar cost averaging",
+        "short": "Invest a fixed amount at regular intervals, regardless of price.",
+        "html": """
+<p>Dollar cost averaging (DCA) invests a fixed amount of money at regular intervals
+rather than all at once. Because a fixed dollar amount buys a variable number of shares,
+the schedule automatically buys more shares when prices are low and fewer when they are
+high. Over time this tends to give a lower average cost per share than buying a fixed
+number of shares each period. The term was coined by Benjamin Graham in The Intelligent
+Investor.</p>
+<p>How it is measured on this dashboard: each contribution buys into an equal-weight
+index of the universe at that day's price, and the reported curve is money-weighted,
+meaning the portfolio value divided by the total cash contributed so far, indexed to 100
+at the first contribution. That puts it on the same scale as the lump-sum strategies so
+the curves can be compared directly.</p>
+<p>What to expect: because DCA adds money gradually, it has less exposure early on. In a
+steadily rising market, a lump-sum buy and hold usually finishes ahead, since the cash
+DCA holds back misses early gains. In a volatile or initially falling market, DCA can do
+better by accumulating cheaper shares. Its main strengths are behavioral: it enforces
+discipline and removes the need to time the market. See the
+<a href="glossary.html#benchmark">benchmark</a> entry for why buy and hold is the natural
+comparison.</p>
+""".strip(),
+    },
+    {
         "key": "universe",
         "title": "Universe",
         "short": "The set of stocks a strategy is run over.",

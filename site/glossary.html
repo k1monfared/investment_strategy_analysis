@@ -23,7 +23,7 @@
 <p class="lead">Plain-language explanations of the metrics and concepts used across the
 dashboard. Throughout the site, an <span class="info">i</span> marker next to a term
 links back here.</p>
-<div class="toc-inline"><a href="#total_return">Total return</a><a href="#cagr">CAGR (Compound Annual Growth Rate)</a><a href="#sharpe">Sharpe ratio</a><a href="#max_drawdown">Maximum drawdown</a><a href="#win_rate">Win rate</a><a href="#confidence_interval">Confidence interval</a><a href="#equity_curve">Equity curve</a><a href="#benchmark">Benchmark and buy and hold</a><a href="#universe">Universe</a><a href="#smoothing">Frequency and smoothing</a></div>
+<div class="toc-inline"><a href="#total_return">Total return</a><a href="#cagr">CAGR (Compound Annual Growth Rate)</a><a href="#sharpe">Sharpe ratio</a><a href="#max_drawdown">Maximum drawdown</a><a href="#win_rate">Win rate</a><a href="#confidence_interval">Confidence interval</a><a href="#equity_curve">Equity curve</a><a href="#benchmark">Benchmark and buy and hold</a><a href="#dollar_cost_averaging">Dollar cost averaging</a><a href="#universe">Universe</a><a href="#smoothing">Frequency and smoothing</a></div>
 <div class="card glossary"><div class="term" id="total_return"><h2>Total return</h2><p class="muted small">The overall percentage gain or loss over the whole period.</p><p>Total return is the simplest performance number: how much an investment grew or
 shrank over the full period, expressed as a percentage of the starting value. A total
 return of 50% means one dollar became one dollar and fifty cents. A total return of
@@ -117,7 +117,24 @@ initial purchase.</p>
 free. If a rule-based strategy cannot beat buy and hold on a risk-adjusted basis, the
 rule is not adding value. On the Explorer, buy and hold is always drawn as a dotted grey
 line so you can immediately see whether a strategy actually improved on simply holding
-the portfolio.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="universe"><h2>Universe</h2><p class="muted small">The set of stocks a strategy is run over.</p><p>A universe is the set of securities a strategy is applied to. It can be a single stock
+the portfolio.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="dollar_cost_averaging"><h2>Dollar cost averaging</h2><p class="muted small">Invest a fixed amount at regular intervals, regardless of price.</p><p>Dollar cost averaging (DCA) invests a fixed amount of money at regular intervals
+rather than all at once. Because a fixed dollar amount buys a variable number of shares,
+the schedule automatically buys more shares when prices are low and fewer when they are
+high. Over time this tends to give a lower average cost per share than buying a fixed
+number of shares each period. The term was coined by Benjamin Graham in The Intelligent
+Investor.</p>
+<p>How it is measured on this dashboard: each contribution buys into an equal-weight
+index of the universe at that day's price, and the reported curve is money-weighted,
+meaning the portfolio value divided by the total cash contributed so far, indexed to 100
+at the first contribution. That puts it on the same scale as the lump-sum strategies so
+the curves can be compared directly.</p>
+<p>What to expect: because DCA adds money gradually, it has less exposure early on. In a
+steadily rising market, a lump-sum buy and hold usually finishes ahead, since the cash
+DCA holds back misses early gains. In a volatile or initially falling market, DCA can do
+better by accumulating cheaper shares. Its main strengths are behavioral: it enforces
+discipline and removes the need to time the market. See the
+<a href="glossary.html#benchmark">benchmark</a> entry for why buy and hold is the natural
+comparison.</p><p class="small"><a href="#top">Back to top</a></p></div><div class="term" id="universe"><h2>Universe</h2><p class="muted small">The set of stocks a strategy is run over.</p><p>A universe is the set of securities a strategy is applied to. It can be a single stock
 such as <code>AAPL</code>, a whole sector such as <code>sector:Information Technology</code>,
 an index such as <code>index:sp500</code>, a user-defined theme, or the entire market.
 The same strategy can be run across any universe, and results are recorded separately for

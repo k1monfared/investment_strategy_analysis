@@ -1,7 +1,7 @@
 import glob, importlib.util, os
 
 REQUIRED_META = {"id", "name", "kind", "params"}
-VALID_KINDS = {"signal", "portfolio", "screen", "benchmark"}
+VALID_KINDS = {"signal", "portfolio", "screen", "benchmark", "cashflow"}
 
 def load_strategy(path):
     spec = importlib.util.spec_from_file_location(

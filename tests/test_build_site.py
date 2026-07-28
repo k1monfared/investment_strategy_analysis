@@ -55,7 +55,7 @@ def test_glossary_page_and_info_links(tmp_path):
     glossary = open(os.path.join(out, "glossary.html"), encoding="utf-8").read()
     # every term anchor is present
     for key in ["sharpe", "cagr", "max_drawdown", "total_return", "win_rate",
-                "confidence_interval", "benchmark", "universe"]:
+                "confidence_interval", "benchmark", "universe", "dollar_cost_averaging"]:
         assert f'id="{key}"' in glossary, key
     # overview metric headers carry info links to glossary anchors
     home = open(os.path.join(out, "index.html"), encoding="utf-8").read()
@@ -76,6 +76,17 @@ def test_explorer_js_has_select_all_and_sector_toggles(tmp_path):
     assert "selectAll" in js
     assert "sec-toggle" in js
     assert "indeterminate" in js  # partial-selection state on group/master boxes
+
+def test_explorer_js_has_no_undefined_data_reference(tmp_path):
+    # Regression: explorer.js used a bare DATA constant that only existed in engine.js,
+    # which threw at init and left the ticker/strategy cards empty. It must reference
+    # the data folder via a literal path instead.
+    out = str(tmp_path / "site")
+    build_site.build_site(results_root=str(tmp_path / "results"), out_dir=out,
+                          export_prices=False)
+    js = open(os.path.join(out, "assets", "explorer.js"), encoding="utf-8").read()
+    assert 'getJSON("data/manifest.json")' in js
+    assert "getJSON(DATA" not in js
 
 def test_engine_js_builds_portfolio_on_date_union(tmp_path):
     out = str(tmp_path / "site")

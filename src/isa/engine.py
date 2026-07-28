@@ -45,7 +45,58 @@ def _metrics(equity, returns):
     return {"total_return": total_return, "cagr": cagr, "sharpe": sharpe,
             "max_drawdown": max_dd, "win_rate": win_rate}
 
+def _equal_weight_level(prices):
+    """An equal-weight index level for the universe, normalized to 1.0 at each
+    column's own first observation and averaged across whatever columns exist on
+    each date. Newly listed tickers join the average from their first traded day."""
+    if isinstance(prices, pd.Series):
+        prices = prices.to_frame()
+    normed = {}
+    for col in prices.columns:
+        s = prices[col].dropna()
+        if s.empty:
+            continue
+        normed[col] = prices[col] / s.iloc[0]
+    if not normed:
+        return pd.Series(dtype=float)
+    level = pd.DataFrame(normed).mean(axis=1)
+    return level.dropna()
+
+
+def _dca_result(strategy_module, prices):
+    """Dollar cost averaging: invest a fixed amount of cash every `every` trading
+    days into an equal-weight index of the universe, buying more units when the
+    price is low and fewer when it is high.
+
+    The reported equity curve is money-weighted: value divided by cumulative
+    contributions, scaled to 100 at the first contribution. So the curve shows the
+    return earned per dollar invested, directly comparable to a lump-sum strategy's
+    100-indexed curve, and all metrics are computed from it.
+    """
+    params = strategy_module.META.get("params", {})
+    spec = strategy_module.generate(prices, params) or {}
+    every = int(spec.get("every", params.get("every", 21)))
+    level = _equal_weight_level(prices)
+    if len(level) < 2:
+        empty = pd.Series(dtype=float)
+        return BacktestResult(empty, empty, _metrics(pd.Series([100.0, 100.0]), pd.Series([0.0])))
+    units = 0.0
+    contrib = 0.0
+    ratio_vals = []
+    for i, L in enumerate(level.to_numpy()):
+        if i % every == 0 and L > 0:
+            units += 1.0 / L      # contribute one unit of cash, buy at today's price
+            contrib += 1.0
+        value = units * L
+        ratio_vals.append((value / contrib) * 100.0 if contrib > 0 else 100.0)
+    equity = pd.Series(ratio_vals, index=level.index)
+    returns = equity.pct_change().dropna()
+    return BacktestResult(equity_curve=equity, returns=returns, metrics=_metrics(equity, returns))
+
+
 def run_backtest(strategy_module, prices, fees=DEFAULT_FEES, slippage=DEFAULT_SLIPPAGE):
+    if strategy_module.META.get("kind") == "cashflow":
+        return _dca_result(strategy_module, prices)
     entries, exits = _signals_from(strategy_module, prices)
     pf = vbt.Portfolio.from_signals(prices, entries, exits, fees=fees, slippage=slippage)
     equity = pf.value()
