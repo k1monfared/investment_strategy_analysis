@@ -14,6 +14,11 @@ def main(argv=None):
     p_build = sub.add_parser("build")
     p_build.add_argument("--results-root", default="results")
     p_build.add_argument("--out-dir", default="site")
+    p_build.add_argument("--strategies-folder", default="strategies")
+    p_build.add_argument("--price-root", default="data/prices")
+    p_build.add_argument("--cat-root", default="data/categories")
+    p_build.add_argument("--no-export-prices", action="store_true",
+                         help="skip exporting per-ticker price JSON for the explorer")
 
     try:
         args = parser.parse_args(argv)
@@ -36,7 +41,11 @@ def main(argv=None):
         runner.run_all(args.universes, run_date)
         return 0
     if args.cmd == "build":
-        build_site.build_site(results_root=args.results_root, out_dir=args.out_dir)
+        build_site.build_site(
+            results_root=args.results_root, out_dir=args.out_dir,
+            strategies_folder=args.strategies_folder,
+            price_root=args.price_root, cat_root=args.cat_root,
+            export_prices=not args.no_export_prices)
         return 0
     print("unknown command")
     return 2

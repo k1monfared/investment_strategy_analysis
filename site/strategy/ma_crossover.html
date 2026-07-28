@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moving Average Crossover</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topnav"><div class="wrap">
+<span class="brand">Investment Strategy Analysis</span>
+<nav>
+<a href="../index.html">Overview</a>
+<a href="../strategies.html" class="active">Strategies</a>
+<a href="../explorer.html">Explorer</a>
+</nav>
+</div></header>
+<main>
+
+<p class="small"><a href="../strategies.html">&larr; All strategies</a></p>
+<h1>Moving Average Crossover <span class="badge signal">signal</span></h1>
+<p class="lead">Hold when a fast moving average is above a slow moving average, exit when it drops below. A classic trend-following rule.</p>
+<div class="card desc"><h2>How it works</h2><p>The moving average crossover is a trend-following rule. It tracks two simple moving
+averages of the closing price, a fast one over the last `fast` trading days and a slow
+one over the last `slow` days. When the fast average rises above the slow average the
+strategy reads this as an established uptrend and enters a long position. When the fast
+average falls back below the slow average it reads this as the trend breaking down and
+exits to cash.</p><p>Parameters:
+- `fast` (default 20): window of the fast moving average in trading days. Roughly one
+  month of data. A shorter fast window reacts more quickly but produces more whipsaw
+  trades.
+- `slow` (default 50): window of the slow moving average in trading days. Roughly ten
+  weeks. A longer slow window smooths out noise but lags turning points more.</p><p>How it behaves:
+- In a strong, persistent trend the rule captures the bulk of the move and sits out the
+  worst of the reversals, which is why its maximum drawdown is typically much smaller
+  than buy and hold.
+- In a choppy, sideways market the two averages cross back and forth, generating many
+  small losing trades. Transaction costs and slippage bite hardest here.
+- Because it sells into weakness and buys into strength, it gives up some upside at
+  bottoms and tops in exchange for avoiding the deepest declines.</p><p>Reading it against the baseline: compare its equity curve and Sharpe ratio to buy and
+hold. A crossover that delivers a comparable return with a shallower drawdown is doing
+its job even if its raw total return is lower.</p></div>
+<div class="card">
+<h2>Parameters</h2>
+<table class="data"><thead><tr><th>Name</th><th>Default</th></tr></thead>
+<tbody><tr><td class='params'>fast</td><td>20</td></tr><tr><td class='params'>slow</td><td>50</td></tr></tbody></table>
+</div>
+<div class="card">
+<h2>Committed results</h2>
+<table class='data'><thead><tr><th>Universe</th><th>Total return</th><th>CAGR</th><th>Sharpe</th><th>Max drawdown</th><th>Win rate</th></tr></thead><tbody><tr><td>index:sp500</td><td>3080.0%</td><td>9.9%</td><td>0.86</td><td>-27.7%</td><td>53.9%</td></tr><tr><td>sector:Energy</td><td>3195.3%</td><td>10.0%</td><td>0.66</td><td>-47.8%</td><td>50.6%</td></tr><tr><td>sector:Financials</td><td>639.6%</td><td>5.6%</td><td>0.53</td><td>-36.4%</td><td>53.6%</td></tr><tr><td>sector:Health Care</td><td>769.8%</td><td>6.1%</td><td>0.56</td><td>-45.3%</td><td>52.6%</td></tr><tr><td>sector:Information Technology</td><td>5613.9%</td><td>11.7%</td><td>0.71</td><td>-48.6%</td><td>53.2%</td></tr></tbody></table>
+</div>
+<div class="card"><h2>References</h2><ul><li>Brock, Lakonishok, and LeBaron (1992), Simple Technical Trading Rules and the Stochastic Properties of Stock Returns</li></ul></div>
+<p><a class="btn" href="../explorer.html">Compare it in the Explorer</a></p>
+
+</main>
+<footer class="foot">
+Generated static dashboard. Metrics come from committed backtest results. The Explorer
+recomputes strategies in the browser for interactive comparison, so its numbers are
+indicative and may differ slightly from the committed engine results.
+</footer>
+</body>
+</html>

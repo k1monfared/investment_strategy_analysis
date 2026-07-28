@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buy and Hold</title>
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body>
+<header class="topnav"><div class="wrap">
+<span class="brand">Investment Strategy Analysis</span>
+<nav>
+<a href="../index.html">Overview</a>
+<a href="../strategies.html" class="active">Strategies</a>
+<a href="../explorer.html">Explorer</a>
+</nav>
+</div></header>
+<main>
+
+<p class="small"><a href="../strategies.html">&larr; All strategies</a></p>
+<h1>Buy and Hold <span class="badge benchmark">benchmark</span></h1>
+<p class="lead">Buy the universe on day one and hold to the end. The reference every other strategy is measured against.</p>
+<div class="card desc"><h2>How it works</h2><p>Buy and hold is the simplest possible strategy and serves as the baseline benchmark in
+this project. On the first available bar it takes an equal-weight position across every
+ticker in the universe and never trades again. There are no entry or exit rules, no
+timing, and no parameters to tune.</p><p>Why it matters as a baseline: any active strategy has to justify its trading. Costs,
+slippage, and taxes all favor doing nothing. If a rule-based strategy cannot beat buy
+and hold on a risk-adjusted basis, the rule is not adding value. For that reason buy and
+hold is drawn as the reference line in every strategy comparison on this dashboard.</p><p>Interpretation notes:
+- On a long uptrending market the total return of buy and hold is usually hard to beat,
+  but its drawdowns are also the deepest because it stays fully invested through every
+  crash.
+- The Sharpe ratio of buy and hold captures the market's own risk-adjusted return over
+  the period, so comparing another strategy's Sharpe to this line tells you whether the
+  strategy improved the return per unit of risk.</p></div>
+<div class="card">
+<h2>Parameters</h2>
+<table class="data"><thead><tr><th>Name</th><th>Default</th></tr></thead>
+<tbody><tr><td class='muted' colspan='2'>none</td></tr></tbody></table>
+</div>
+<div class="card">
+<h2>Committed results</h2>
+<table class='data'><thead><tr><th>Universe</th><th>Total return</th><th>CAGR</th><th>Sharpe</th><th>Max drawdown</th><th>Win rate</th></tr></thead><tbody><tr><td>index:sp500</td><td>9663.5%</td><td>13.4%</td><td>0.82</td><td>-48.2%</td><td>54.8%</td></tr><tr><td>sector:Energy</td><td>7297.4%</td><td>12.5%</td><td>0.58</td><td>-68.3%</td><td>53.0%</td></tr><tr><td>sector:Financials</td><td>8087.8%</td><td>12.8%</td><td>0.67</td><td>-55.3%</td><td>54.6%</td></tr><tr><td>sector:Health Care</td><td>8468.2%</td><td>13.0%</td><td>0.77</td><td>-43.1%</td><td>53.5%</td></tr><tr><td>sector:Information Technology</td><td>18217.5%</td><td>15.3%</td><td>0.67</td><td>-72.1%</td><td>53.5%</td></tr></tbody></table>
+</div>
+
+<p><a class="btn" href="../explorer.html">Compare it in the Explorer</a></p>
+
+</main>
+<footer class="foot">
+Generated static dashboard. Metrics come from committed backtest results. The Explorer
+recomputes strategies in the browser for interactive comparison, so its numbers are
+indicative and may differ slightly from the committed engine results.
+</footer>
+</body>
+</html>

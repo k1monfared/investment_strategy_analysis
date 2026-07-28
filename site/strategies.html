@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Strategies</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topnav"><div class="wrap">
+<span class="brand">Investment Strategy Analysis</span>
+<nav>
+<a href="index.html">Overview</a>
+<a href="strategies.html" class="active">Strategies</a>
+<a href="explorer.html">Explorer</a>
+</nav>
+</div></header>
+<main>
+
+<h1>Strategies</h1>
+<p class="lead">Every strategy discovered in the project. Each one is a single Python
+file that emits trading signals. Click through for a full explanation, parameters, and
+how to read its results.</p>
+<div class="grid">
+<div class="card strat-card">
+<h3><a href="strategy/buy_and_hold.html">Buy and Hold</a> <span class="badge benchmark">benchmark</span></h3>
+<p class="desc">Buy the universe on day one and hold to the end. The reference every other strategy is measured against.</p>
+<p class="small muted">Parameters: <span class="params">{}</span></p>
+<a class="btn secondary" href="strategy/buy_and_hold.html">Read the description</a>
+</div>
+<div class="card strat-card">
+<h3><a href="strategy/ma_crossover.html">Moving Average Crossover</a> <span class="badge signal">signal</span></h3>
+<p class="desc">Hold when a fast moving average is above a slow moving average, exit when it drops below. A classic trend-following rule.</p>
+<p class="small muted">Parameters: <span class="params">{"fast": 20, "slow": 50}</span></p>
+<a class="btn secondary" href="strategy/ma_crossover.html">Read the description</a>
+</div></div>
+
+</main>
+<footer class="foot">
+Generated static dashboard. Metrics come from committed backtest results. The Explorer
+recomputes strategies in the browser for interactive comparison, so its numbers are
+indicative and may differ slightly from the committed engine results.
+</footer>
+</body>
+</html>
