@@ -30,7 +30,8 @@ def test_build_site_writes_all_pages_and_assets(tmp_path):
     out = str(tmp_path / "site")
     build_site.build_site(results_root=root, out_dir=out, export_prices=False)
     for rel in ["index.html", "strategies.html", "explorer.html", "glossary.html",
-                "assets/style.css", "assets/explorer.js", "assets/plotly.min.js",
+                "assets/style.css", "assets/engine.js", "assets/explorer.js",
+                "assets/overview.js", "assets/plotly.min.js",
                 "strategy/ma_crossover.html", "strategy/buy_and_hold.html"]:
         assert os.path.exists(os.path.join(out, rel)), rel
     # strategy index links to detail pages
@@ -75,6 +76,34 @@ def test_explorer_js_has_select_all_and_sector_toggles(tmp_path):
     assert "selectAll" in js
     assert "sec-toggle" in js
     assert "indeterminate" in js  # partial-selection state on group/master boxes
+
+def test_engine_js_builds_portfolio_on_date_union(tmp_path):
+    out = str(tmp_path / "site")
+    build_site.build_site(results_root=str(tmp_path / "results"), out_dir=out,
+                          export_prices=False)
+    js = open(os.path.join(out, "assets", "engine.js"), encoding="utf-8").read()
+    # portfolio uses the union of dates and treats missing tickers as zero,
+    # rather than intersecting to the shared history
+    assert "union of all dates" in js
+    assert "missing ticker contributes 0" in js
+    assert "if (price === undefined) continue;" in js
+
+def test_overview_has_interactive_controls(tmp_path):
+    root = str(tmp_path / "results")
+    results.append_result("ma_crossover", "2026-07-27", "AAPL",
+                          {"sharpe": 1.0}, {"sharpe": (0.5, 1.5)}, {}, root=root)
+    out = str(tmp_path / "site")
+    build_site.build_site(results_root=root, out_dir=out, export_prices=False)
+    home = open(os.path.join(out, "index.html"), encoding="utf-8").read()
+    # interactive universe/date/strategy controls exist on the overview
+    for token in ['id="ovUniverse"', 'id="ovStart"', 'id="ovEnd"',
+                  'id="ovStrats"', 'id="ovChart"', "assets/overview.js",
+                  "assets/engine.js"]:
+        assert token in home, token
+    # overview.js drives the interactive comparison
+    ov = open(os.path.join(out, "assets", "overview.js"), encoding="utf-8").read()
+    assert "universeTickers" in ov
+    assert "buy_and_hold" in ov  # baseline always drawn
 
 def test_export_data_writes_manifest_and_prices(tmp_path):
     # a tiny fake price store and category file

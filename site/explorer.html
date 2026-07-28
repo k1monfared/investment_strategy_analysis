@@ -26,6 +26,10 @@ strategies to see how each would have performed on that exact portfolio and wind
 always compared against a buy and hold
 <a href="glossary.html#benchmark">baseline</a>. Unsure what a number means? Every metric
 links to the <a href="glossary.html">Glossary</a>.</p>
+<p class="hint">Tickers with different history lengths mix freely. A ticker that did not
+yet exist on a given date contributes nothing on that date and starts adding to the
+portfolio from its first traded day, so a short-history ticker no longer shortens the
+whole chart.</p>
 
 <div class="card">
 <div class="controls">
@@ -96,6 +100,7 @@ the window.</p>
     </div>
   </div>
 </div>
+<script src="assets/engine.js"></script>
 <script src="assets/explorer.js"></script>
 
 </main>

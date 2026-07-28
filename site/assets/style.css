@@ -151,3 +151,8 @@ thead th .info { margin-left: 4px; }
 .toc-inline { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
 .toc-inline a { background: var(--accent-weak); border-radius: 999px; padding: 4px 11px; font-size: 13px; }
 :target { background: #fff7e6; }
+
+/* interactive overview controls */
+.ov-strats { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 6px 0 2px; }
+.ov-strat { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+#ovChart { width: 100%; min-height: 420px; }

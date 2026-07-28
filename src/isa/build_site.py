@@ -9,7 +9,8 @@ Pages produced under out_dir:
   data/manifest.json        list of available tickers with sector
   data/strategies.json      strategy metadata for the explorer
   data/prices/<TICKER>.json compact price series for the explorer
-  assets/style.css, assets/explorer.js, assets/plotly.min.js
+  assets/style.css, assets/engine.js, assets/explorer.js, assets/overview.js,
+  assets/plotly.min.js
 
 All charts obey the project rules: bar charts start at zero, change is shown with
 line and dot charts, and there are no emojis in any output.
@@ -167,9 +168,10 @@ def _overview_table_html(df):
                 cls = " class=\"metric-neg\""
             cells.append(f"<td{cls}>{txt}</td>")
         link = f'<a href="strategy/{sid}.html">{sid}</a>'
-        rows.append(f"<tr><td>{link}</td><td class='muted'>{uni}"
-                    f"{_info('universe')}</td>{''.join(cells)}</tr>")
-    return (f"<table class='data'><thead><tr><th>Strategy</th><th>Universe</th>{head}</tr>"
+        rows.append(f"<tr><td>{link}</td><td class='muted'>{uni}</td>"
+                    f"{''.join(cells)}</tr>")
+    return (f"<table class='data'><thead><tr><th>Strategy</th>"
+            f"<th>Universe{_info('universe')}</th>{head}</tr>"
             f"</thead><tbody>{''.join(rows)}</tbody></table>")
 
 
@@ -197,6 +199,50 @@ def _sharpe_dot_chart(results_df):
                    config={"displayModeBar": False})
 
 
+def _interactive_overview_card():
+    return """
+<div class="card">
+<h2>Interactive comparison</h2>
+<p class="hint">Pick a universe and a date range, choose strategies, and the backtest is
+recomputed live in the browser on an equal-weight portfolio of that universe. Every curve
+reindexes to 100 at the window start and metrics recompute for the window. Loading a whole
+universe reads many price series, so it can take a few seconds.</p>
+<div class="controls">
+  <div class="control">
+    <label for="ovUniverse">Universe <a class="info" href="glossary.html#universe" title="What a strategy runs over">i</a></label>
+    <select id="ovUniverse"></select>
+  </div>
+  <div class="control">
+    <label for="ovStart">Start date</label>
+    <input type="date" id="ovStart">
+  </div>
+  <div class="control">
+    <label for="ovEnd">End date</label>
+    <input type="date" id="ovEnd">
+  </div>
+  <div class="control">
+    <label>&nbsp;</label>
+    <button class="btn secondary small" id="ovFullRange">Full range</button>
+  </div>
+  <div class="control">
+    <label for="ovFee">Per-trade cost (fraction)</label>
+    <input type="number" id="ovFee" value="0" min="0" step="0.0005">
+  </div>
+  <div class="control">
+    <label>&nbsp;</label>
+    <button class="btn" id="ovRun">Run</button>
+  </div>
+</div>
+<div class="ov-strats" id="ovStrats"></div>
+<p class="hint" id="ovStatus">Loading...</p>
+<div class="chart" id="ovChart"></div>
+<div id="ovMetrics"></div>
+</div>
+<script src="assets/engine.js"></script>
+<script src="assets/overview.js"></script>
+"""
+
+
 def _overview_body(df):
     n_strats = df["strategy_id"].nunique() if not df.empty else 0
     n_unis = df["universe"].nunique() if not df.empty else 0
@@ -208,20 +254,23 @@ to build a custom portfolio and compare strategies on it interactively.</p>
 <div class="pill-row">
 <span class="pill">{n_strats} strategies</span>
 <span class="pill">{n_unis} universes</span>
-<span class="pill">{len(df)} result rows</span>
+<span class="pill">{len(df)} committed result rows</span>
 </div>
+{_interactive_overview_card()}
 <div class="card">
 <h2>Risk-adjusted performance {_info("sharpe")}</h2>
 {_sharpe_dot_chart(df) if not df.empty else "<p class='empty'>No results yet.</p>"}
 <p class="hint">Higher <a href="glossary.html#sharpe">Sharpe</a> is better. Bars are 95%
 <a href="glossary.html#confidence_interval">confidence intervals</a> on the estimate.
-New to these terms? See the <a href="glossary.html">Glossary</a>.</p>
+These are the committed engine results. New to these terms? See the
+<a href="glossary.html">Glossary</a>.</p>
 </div>
 <div class="card">
-<h2>Strategy comparison</h2>
+<h2>Committed strategy comparison</h2>
 {_overview_table_html(df)}
-<p class="hint">Each metric header has an <span class="info">i</span> link to its glossary
-entry.</p>
+<p class="hint">These rows come from the committed Python engine runs. Each metric header
+has an <span class="info">i</span> link to its glossary entry. For custom date ranges and
+universes, use the interactive comparison above.</p>
 </div>
 """
 
@@ -258,8 +307,9 @@ def _strategy_detail_body(s, df):
         rows = []
         for uni, r in piv.iterrows():
             cells = "".join(f"<td>{_fmt_metric(m, r.get(m))}</td>" for m in metrics)
-            rows.append(f"<tr><td>{uni}{_info('universe', depth=1)}</td>{cells}</tr>")
-        results_html = (f"<table class='data'><thead><tr><th>Universe</th>{head}</tr>"
+            rows.append(f"<tr><td>{uni}</td>{cells}</tr>")
+        results_html = (f"<table class='data'><thead><tr>"
+                        f"<th>Universe{_info('universe', depth=1)}</th>{head}</tr>"
                         f"</thead><tbody>{''.join(rows)}</tbody></table>")
     else:
         results_html = "<p class='empty'>No committed results for this strategy yet.</p>"
@@ -304,6 +354,10 @@ strategies to see how each would have performed on that exact portfolio and wind
 always compared against a buy and hold
 <a href="glossary.html#benchmark">baseline</a>. Unsure what a number means? Every metric
 links to the <a href="glossary.html">Glossary</a>.</p>
+<p class="hint">Tickers with different history lengths mix freely. A ticker that did not
+yet exist on a given date contributes nothing on that date and starts adding to the
+portfolio from its first traded day, so a short-history ticker no longer shortens the
+whole chart.</p>
 
 <div class="card">
 <div class="controls">
@@ -374,6 +428,7 @@ the window.</p>
     </div>
   </div>
 </div>
+<script src="assets/engine.js"></script>
 <script src="assets/explorer.js"></script>
 """
 
@@ -455,8 +510,12 @@ def build_site(results_root="results", out_dir="site",
     os.makedirs(assets_dir, exist_ok=True)
     with open(os.path.join(assets_dir, "style.css"), "w", encoding="utf-8") as f:
         f.write(web_assets.STYLE_CSS)
+    with open(os.path.join(assets_dir, "engine.js"), "w", encoding="utf-8") as f:
+        f.write(web_assets.ENGINE_JS)
     with open(os.path.join(assets_dir, "explorer.js"), "w", encoding="utf-8") as f:
         f.write(web_assets.EXPLORER_JS)
+    with open(os.path.join(assets_dir, "overview.js"), "w", encoding="utf-8") as f:
+        f.write(web_assets.OVERVIEW_JS)
     # self-hosted Plotly so charts render without any CDN dependency
     _copy_plotly(assets_dir)
 
